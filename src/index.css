@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+
+:root {
+  --accent-color: #ff8a3d;
+  --accent-bg: #2e1c10;
+}
+
+@theme {
+  --color-bg-base: #0a0a0a;
+  --color-bg-card: #141414;
+  --color-bg-raised: #1a1a1a;
+  --color-text-primary: #e5e5e3;
+  --color-text-secondary: #8a8a87;
+  --color-text-muted: #5c5c59;
+  --color-accent: var(--accent-color);
+}
+
+/* Tons secundários usados na pilha de cards (efeito de profundidade) */
+:root {
+  --card-tone-2: #1c1a18;
+  --card-tone-3: #171512;
+}
+
+/* Perfil Empresa troca o accent inteiro do app para verde neon.
+   O valor real (nome/cor de cada perfil) vive no banco -- isso aqui
+   é só o mecanismo de troca de tema via classe no <html>. */
+html.theme-empresa {
+  --accent-color: #4fce7a;
+  --accent-bg: #17301f;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: #0a0a0a;
+  color: #e5e5e3;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Textura de ruído sutil no fundo, decidida no wireframe */
+.noise-bg {
+  position: relative;
+}
+.noise-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
