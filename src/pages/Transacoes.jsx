@@ -135,11 +135,11 @@ export default function Transacoes() {
                 />
                 <div>
                   <p className="text-sm">
-                    {cat?.nome || 'Sem categoria'}
+                    {t.anotacao || cat?.nome || 'Sem categoria'}
                     {t.parcela_atual ? ` · parcela ${t.parcela_atual}` : ''}
                   </p>
                   <p className="text-[11px] text-text-secondary mt-0.5">
-                    {conta?.nome} · {t.data.slice(8, 10)}/{t.data.slice(5, 7)}
+                    {t.anotacao && cat?.nome ? `${cat.nome} · ` : ''}{conta?.nome} · {t.data.slice(8, 10)}/{t.data.slice(5, 7)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

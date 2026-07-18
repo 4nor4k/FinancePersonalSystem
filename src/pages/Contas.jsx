@@ -131,6 +131,12 @@ export default function Contas() {
             </div>
             {editandoId === c.id && (
               <div className="px-3 pb-3">
+                <p className="text-[11px] text-text-muted mb-1.5">Nome</p>
+                <input
+                  value={c.nome}
+                  onChange={(e) => updateConta(c.id, { nome: e.target.value })}
+                  className="w-full bg-bg-raised rounded-lg px-3 py-2.5 text-sm outline-none mb-3"
+                />
                 <p className="text-[11px] text-text-muted mb-1.5">Ícone</p>
                 <div className="grid grid-cols-6 gap-2 mb-3">
                   {ICONES.map((ic) => (

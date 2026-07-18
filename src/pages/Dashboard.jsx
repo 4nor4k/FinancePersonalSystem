@@ -92,8 +92,10 @@ export default function Dashboard() {
         valores[mesIdx] += t.valor
       })
     return valores
+      .map((valor, idx) => ({ idx, valor }))
+      .filter((m) => m.valor > 0)
   }, [transacoes, anoAtual])
-  const maiorMes = Math.max(...despesasPorMes, 1)
+  const maiorMes = Math.max(...despesasPorMes.map((m) => m.valor), 1)
   const mesAtualIdx = Number(mesRef.slice(5, 7)) - 1
 
   const proximasTransacoes = transacoes
@@ -199,7 +201,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2.5">
                 <span className="w-2 h-2 rounded-full" style={{ background: vencido ? '#e2716f' : 'var(--accent-color)' }} />
                 <span className="text-sm">
-                  {cat?.nome || 'Sem categoria'} · {t.data.slice(8, 10)}/{t.data.slice(5, 7)}
+                  {t.anotacao || cat?.nome || 'Sem categoria'} · {t.data.slice(8, 10)}/{t.data.slice(5, 7)}
                 </span>
               </div>
               <span className="text-sm text-text-secondary">{mask(formatBRL(t.valor))}</span>
@@ -296,28 +298,38 @@ function ChartsCarousel({ despesasPorCategoria, totalCategorias, despesasPorMes,
       >
         <div className="min-w-full snap-center bg-bg-card rounded-2xl p-4">
           <p className="text-sm text-text-secondary mb-4">Despesas ao longo de {anoAtual}</p>
-          <div className="flex items-end gap-2 h-20">
-            {despesasPorMes.map((v, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                <div
-                  className="w-full"
-                  style={{
-                    height: `${Math.max((v / maiorMes) * 100, 4)}%`,
-                    background: i === mesAtualIdx ? 'var(--accent-color)' : '#232323',
-                    borderRadius: '6px 6px 2px 2px',
-                    boxShadow: i === mesAtualIdx ? '0 0 16px 0 color-mix(in srgb, var(--accent-color) 45%, transparent)' : 'none',
-                  }}
-                />
+          {despesasPorMes.length === 0 ? (
+            <p className="text-sm text-text-muted">Sem despesas registradas em {anoAtual} ainda.</p>
+          ) : (
+            <>
+              <div className="flex items-end gap-2 h-20">
+                {despesasPorMes.map(({ idx, valor }) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-1.5">
+                    <div
+                      className="w-full"
+                      style={{
+                        height: `${Math.max((valor / maiorMes) * 100, 4)}%`,
+                        background: idx === mesAtualIdx ? 'var(--accent-color)' : '#232323',
+                        borderRadius: '6px 6px 2px 2px',
+                        boxShadow: idx === mesAtualIdx ? '0 0 16px 0 color-mix(in srgb, var(--accent-color) 45%, transparent)' : 'none',
+                      }}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="flex gap-1.5 mt-2">
-            {MESES_ABREV.map((m, i) => (
-              <span key={m} className="flex-1 text-center text-[9px]" style={{ color: i === mesAtualIdx ? 'var(--accent-color)' : '#5c5c59', fontWeight: i === mesAtualIdx ? 500 : 400 }}>
-                {m}
-              </span>
-            ))}
-          </div>
+              <div className="flex gap-1.5 mt-2">
+                {despesasPorMes.map(({ idx }) => (
+                  <span
+                    key={idx}
+                    className="flex-1 text-center text-[9px]"
+                    style={{ color: idx === mesAtualIdx ? 'var(--accent-color)' : '#5c5c59', fontWeight: idx === mesAtualIdx ? 500 : 400 }}
+                  >
+                    {MESES_ABREV[idx]}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="min-w-full snap-center bg-bg-card rounded-2xl p-4">

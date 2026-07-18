@@ -140,11 +140,11 @@ export default function NovaTransacao() {
       </div>
 
       <div className="mb-3">
-        <p className="text-[11px] text-text-muted mb-1.5">Anotação</p>
+        <p className="text-[11px] text-text-muted mb-1.5">Descrição</p>
         <input
           value={anotacao}
           onChange={(e) => setAnotacao(e.target.value)}
-          placeholder="Opcional"
+          placeholder="Ex: Conta de luz"
           className="w-full bg-bg-card rounded-lg px-3 py-3 text-sm outline-none placeholder:text-text-muted"
         />
       </div>
