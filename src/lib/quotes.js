@@ -5,12 +5,16 @@
 const BRAPI_TOKEN = import.meta.env.VITE_BRAPI_TOKEN
 
 export async function fetchStockQuotes(tickers) {
-  if (!tickers || tickers.length === 0) return {}
+  if (!tickers || tickers.length === 0) return { data: {}, erro: null }
   try {
     const url = `https://brapi.dev/api/quote/${tickers.join(',')}${BRAPI_TOKEN ? `?token=${BRAPI_TOKEN}` : ''}`
     const res = await fetch(url)
-    if (!res.ok) throw new Error('Falha ao buscar cotações')
     const data = await res.json()
+    if (!res.ok) {
+      const msg = data?.message || data?.error || `Erro ${res.status} ao buscar cotações`
+      console.error('Erro da brapi:', msg, data)
+      return { data: {}, erro: msg }
+    }
     const map = {}
     ;(data.results || []).forEach((r) => {
       map[r.symbol] = {
@@ -18,10 +22,10 @@ export async function fetchStockQuotes(tickers) {
         variacaoPct: r.regularMarketChangePercent,
       }
     })
-    return map
+    return { data: map, erro: null }
   } catch (e) {
     console.error('Erro ao buscar cotações da brapi:', e)
-    return {}
+    return { data: {}, erro: e.message || 'Falha de conexão' }
   }
 }
 

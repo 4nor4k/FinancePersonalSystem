@@ -9,7 +9,7 @@ import Overlay from '../components/Overlay'
 
 export default function Watchlist() {
   const navigate = useNavigate()
-  const { watchlistAtivos, cotacoes, addAtivoWatchlist, removeAtivoWatchlist } = useData()
+  const { watchlistAtivos, cotacoes, cotacoesErro, addAtivoWatchlist, removeAtivoWatchlist } = useData()
   const [adicionando, setAdicionando] = useState(false)
   const [ticker, setTicker] = useState('')
   const [salvando, setSalvando] = useState(false)
@@ -37,6 +37,13 @@ export default function Watchlist() {
 
       <p className="text-[11px] text-text-muted mb-3">Deslize um ativo pra parar de acompanhar</p>
 
+      {cotacoesErro && (
+        <div className="bg-[#1e1414] rounded-xl p-3 mb-3">
+          <p className="text-xs" style={{ color: '#e2716f' }}>Não foi possível buscar as cotações</p>
+          <p className="text-[11px] text-text-muted mt-1">{cotacoesErro}</p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
         {watchlistAtivos.map((ativo) => {
           const cot = cotacoes[ativo.ticker]
@@ -54,7 +61,7 @@ export default function Watchlist() {
                     </p>
                   </div>
                 ) : (
-                  <span className="text-xs text-text-muted">carregando...</span>
+                  <span className="text-xs text-text-muted">{cotacoesErro ? 'indisponível' : 'carregando...'}</span>
                 )}
               </div>
             </SwipeableRow>

@@ -40,6 +40,7 @@ export function DataProvider({ children }) {
   const [objetivos, setObjetivos] = useState([])
   const [watchlistAtivos, setWatchlistAtivos] = useState([])
   const [cotacoes, setCotacoes] = useState({})
+  const [cotacoesErro, setCotacoesErro] = useState(null)
   const [mercado, setMercado] = useState({ usd: null, ouro: null })
   const [activeProfileId, setActiveProfileId] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -147,9 +148,13 @@ export function DataProvider({ children }) {
   useEffect(() => {
     if (!tickersKey) {
       setCotacoes({})
+      setCotacoesErro(null)
       return
     }
-    fetchStockQuotes(tickersKey.split(',')).then(setCotacoes)
+    fetchStockQuotes(tickersKey.split(',')).then(({ data, erro }) => {
+      setCotacoes(data)
+      setCotacoesErro(erro)
+    })
   }, [tickersKey])
 
   // ---------- Perfis ----------
@@ -617,6 +622,7 @@ export function DataProvider({ children }) {
     aportarObjetivo,
     watchlistAtivos: watchlistAtivos.filter((w) => w.perfil_id === activeProfileId),
     cotacoes,
+    cotacoesErro,
     mercado,
     addAtivoWatchlist,
     removeAtivoWatchlist,
