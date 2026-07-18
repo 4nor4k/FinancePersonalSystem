@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { biometriaAtiva } from './lib/biometria'
 import BottomNav from './components/BottomNav'
+import LockScreen from './components/LockScreen'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import NovaTransacao from './pages/NovaTransacao'
@@ -17,6 +20,7 @@ import Minigame from './pages/Minigame'
 
 export default function App() {
   const { isAuthenticated, loading } = useAuth()
+  const [desbloqueado, setDesbloqueado] = useState(() => !biometriaAtiva())
 
   if (loading) {
     return <div className="min-h-screen bg-bg-base" />
@@ -24,6 +28,10 @@ export default function App() {
 
   if (!isAuthenticated) {
     return <Login />
+  }
+
+  if (!desbloqueado) {
+    return <LockScreen onUnlock={() => setDesbloqueado(true)} />
   }
 
   return (

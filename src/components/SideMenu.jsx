@@ -11,6 +11,7 @@ import {
   IconTarget,
   IconChartLine,
   IconHeart,
+  IconFingerprint,
   IconLogout,
   IconUser,
 } from '@tabler/icons-react'
@@ -18,6 +19,7 @@ import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import Overlay from './Overlay'
 import { CORES } from '../lib/colors'
+import { biometriaAtiva, biometriaDisponivel, registrarBiometria, desativarBiometria } from '../lib/biometria'
 
 
 const NAV_ITEMS = [
@@ -38,6 +40,28 @@ export default function SideMenu({ onClose }) {
   const [criandoAberto, setCriandoAberto] = useState(false)
   const [novoNome, setNovoNome] = useState('')
   const [novaCor, setNovaCor] = useState(CORES[0])
+  const [bioAtiva, setBioAtiva] = useState(biometriaAtiva())
+  const [bioErro, setBioErro] = useState('')
+
+  async function toggleBiometria() {
+    setBioErro('')
+    if (bioAtiva) {
+      desativarBiometria()
+      setBioAtiva(false)
+      return
+    }
+    const disponivel = await biometriaDisponivel()
+    if (!disponivel) {
+      setBioErro('Esse aparelho/navegador não tem biometria disponível.')
+      return
+    }
+    try {
+      await registrarBiometria(isDemo ? 'demo' : user?.email)
+      setBioAtiva(true)
+    } catch (e) {
+      setBioErro('Não foi possível ativar. Tenta de novo.')
+    }
+  }
 
   function irPara(path) {
     onClose()
@@ -132,8 +156,25 @@ export default function SideMenu({ onClose }) {
         </div>
 
         <button
+          onClick={toggleBiometria}
+          className="w-full bg-bg-card rounded-xl px-3 py-2.5 flex items-center justify-between mb-2 mt-2"
+        >
+          <div className="flex items-center gap-2.5">
+            <IconFingerprint size={17} className="text-text-secondary" />
+            <span className="text-xs">Desbloqueio por biometria</span>
+          </div>
+          <div className="w-9 h-5 rounded-full relative" style={{ background: bioAtiva ? 'var(--accent-bg)' : '#1a1a1a' }}>
+            <div
+              className="w-4 h-4 rounded-full absolute top-0.5 transition-all"
+              style={{ background: bioAtiva ? 'var(--accent-color)' : '#5c5c59', left: bioAtiva ? 18 : 2 }}
+            />
+          </div>
+        </button>
+        {bioErro && <p className="text-[10px] text-center mb-2" style={{ color: '#e2716f' }}>{bioErro}</p>}
+
+        <button
           onClick={handleSair}
-          className="w-full bg-[#1e1414] text-[#e2716f] rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 mt-6"
+          className="w-full bg-[#1e1414] text-[#e2716f] rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 mt-2"
         >
           <IconLogout size={16} />
           Sair da conta
