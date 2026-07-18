@@ -1,15 +1,23 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
-import { IconWallet } from '@tabler/icons-react'
+import { IconWallet, IconMailCheck } from '@tabler/icons-react'
+
+const EMAIL_KEY = 'financeiro:last-email'
 
 export default function Login() {
   const { enterDemo } = useAuth()
   const [mode, setMode] = useState('entrar') // 'entrar' | 'criar'
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() => localStorage.getItem(EMAIL_KEY) || '')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
+  const [cadastroEnviado, setCadastroEnviado] = useState(false)
+
+  function handleEmailChange(v) {
+    setEmail(v)
+    localStorage.setItem(EMAIL_KEY, v)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -20,8 +28,42 @@ export default function Login() {
         ? supabase.auth.signInWithPassword({ email, password: senha })
         : supabase.auth.signUp({ email, password: senha })
     const { error } = await action
-    if (error) setErro(error.message)
     setCarregando(false)
+    if (error) {
+      setErro(error.message)
+      return
+    }
+    if (mode === 'criar') {
+      setCadastroEnviado(true)
+    }
+  }
+
+  if (cadastroEnviado) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center px-6 max-w-sm mx-auto text-center">
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+          style={{ background: 'var(--accent-bg)' }}
+        >
+          <IconMailCheck size={26} style={{ color: 'var(--accent-color)' }} />
+        </div>
+        <h1 className="text-lg font-medium mb-2">Confirme seu email</h1>
+        <p className="text-sm text-text-secondary mb-1">Enviamos um link de confirmação para</p>
+        <p className="text-sm font-medium mb-6">{email}</p>
+        <p className="text-xs text-text-muted mb-8">
+          Verifique sua caixa de entrada (e a pasta de spam) e toque no link pra ativar sua conta.
+        </p>
+        <button
+          onClick={() => {
+            setCadastroEnviado(false)
+            setMode('entrar')
+          }}
+          className="text-xs text-text-secondary"
+        >
+          Voltar pro login
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -43,7 +85,7 @@ export default function Login() {
           required
           placeholder="seu@email.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => handleEmailChange(e.target.value)}
           className="bg-bg-card rounded-xl px-4 py-3 text-sm outline-none placeholder:text-text-muted"
         />
         <input

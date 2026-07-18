@@ -40,7 +40,7 @@ export default function Wishlist() {
   const hoje = new Date().toISOString().slice(0, 10)
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 pb-28">
+    <div className="max-w-md mx-auto px-4 pt-4 pb-56">
       <div className="flex items-center justify-between mb-4">
         <button onClick={() => navigate(-1)} className="text-text-secondary">
           <IconChevronLeft size={20} />

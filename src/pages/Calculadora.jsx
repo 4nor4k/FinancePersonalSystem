@@ -39,7 +39,7 @@ export default function Calculadora() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 pb-28">
+    <div className="max-w-md mx-auto px-4 pt-4 pb-56">
       <div className="flex items-center justify-between mb-5">
         <span className="text-sm font-medium">Calculadora</span>
         <button onClick={() => setExpr('')} className="text-text-secondary">

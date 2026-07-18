@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { IconSettings, IconEye, IconEyeOff, IconPhoto, IconChevronRight } from '@tabler/icons-react'
+import { IconMenu2, IconEye, IconEyeOff, IconPhoto, IconChevronRight } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL } from '../lib/format'
 import AccountStack from '../components/AccountStack'
 import TrendTriangle from '../components/TrendTriangle'
+import SideMenu from '../components/SideMenu'
 
 const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
@@ -23,6 +24,7 @@ export default function Dashboard() {
   } = useData()
 
   const mask = (value) => (valuesHidden ? '••••' : value)
+  const [menuAberto, setMenuAberto] = useState(false)
 
   const mesAtual = new Date().toISOString().slice(0, 7)
   const anoAtual = new Date().getFullYear()
@@ -95,7 +97,7 @@ export default function Dashboard() {
     .reduce((acc, t) => acc + t.valor, 0)
 
   return (
-    <div className="noise-bg max-w-md mx-auto px-4 pt-4 pb-28">
+    <div className="noise-bg max-w-md mx-auto px-4 pt-4 pb-56">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-5 pt-1">
         <div className="flex flex-col">
           <span className="text-[11px] text-text-muted">USD</span>
@@ -122,11 +124,13 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex justify-end">
-          <Link to="/configuracoes" className="text-text-secondary">
-            <IconSettings size={20} />
-          </Link>
+          <button onClick={() => setMenuAberto(true)} className="text-text-secondary">
+            <IconMenu2 size={20} />
+          </button>
         </div>
       </div>
+
+      {menuAberto && <SideMenu onClose={() => setMenuAberto(false)} />}
 
       <div className="mb-6">
         <div className="flex items-center gap-2.5 mb-2">

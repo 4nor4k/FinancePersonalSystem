@@ -7,8 +7,9 @@ import NovaTransacao from './pages/NovaTransacao'
 import Transacoes from './pages/Transacoes'
 import Contas from './pages/Contas'
 import Categorias from './pages/Categorias'
-import Configuracoes from './pages/Configuracoes'
 import Calculadora from './pages/Calculadora'
+import CalculadoraJuros from './pages/CalculadoraJuros'
+import Objetivos from './pages/Objetivos'
 import Notas from './pages/Notas'
 import Wishlist from './pages/Wishlist'
 import Minigame from './pages/Minigame'
@@ -32,7 +33,8 @@ export default function App() {
         <Route path="/transacoes/nova" element={<NovaTransacao />} />
         <Route path="/contas" element={<Contas />} />
         <Route path="/categorias" element={<Categorias />} />
-        <Route path="/configuracoes" element={<Configuracoes />} />
+        <Route path="/juros-compostos" element={<CalculadoraJuros />} />
+        <Route path="/objetivos" element={<Objetivos />} />
         <Route path="/calculadora" element={<Calculadora />} />
         <Route path="/notas" element={<Notas />} />
         <Route path="/wishlist" element={<Wishlist />} />

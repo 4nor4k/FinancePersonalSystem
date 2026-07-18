@@ -13,6 +13,17 @@ import {
 
 const DataContext = createContext(null)
 
+// Antes, erros do Supabase eram ignorados silenciosamente (só pegávamos
+// "data" e nunca checávamos "error"), o que causava bugs tipo "criei mas
+// não aparece". Esse helper garante que todo erro apareça no console e
+// avise o usuário, em vez de falhar em silêncio.
+function reportError(error, contexto) {
+  if (!error) return false
+  console.error(`Erro em ${contexto}:`, error)
+  alert(`Não foi possível completar a ação (${contexto}). Detalhe: ${error.message || error}`)
+  return true
+}
+
 export function DataProvider({ children }) {
   const { isDemo, user } = useAuth()
 
@@ -69,16 +80,18 @@ export function DataProvider({ children }) {
       ])
 
       if (cancelled) return
+      ;[p, c, cat, rec, t, n, w].forEach((r) => reportError(r.error, 'carregar dados'))
 
       let perfisData = p.data || []
 
       // Primeiro acesso: cria um perfil "Pessoal" padrão pra não abrir vazio.
       if (perfisData.length === 0) {
-        const { data: novo } = await supabase
+        const { data: novo, error } = await supabase
           .from('perfis')
           .insert({ usuario_id: user.id, nome: 'Pessoal', cor: '#ff8a3d', cor_bg: '#2e1c10' })
           .select()
           .single()
+        reportError(error, 'criar perfil inicial')
         if (novo) perfisData = [novo]
       }
 
@@ -116,11 +129,12 @@ export function DataProvider({ children }) {
         setPerfis((prev) => [...prev, novo])
         return novo
       }
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('perfis')
         .insert({ usuario_id: user.id, nome, cor, cor_bg })
         .select()
         .single()
+      if (reportError(error, 'criar perfil')) return null
       if (data) setPerfis((prev) => [...prev, data])
       return data
     },
@@ -130,7 +144,10 @@ export function DataProvider({ children }) {
   const updateProfile = useCallback(
     async (id, patch) => {
       setPerfis((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
-      if (!isDemo) await supabase.from('perfis').update(patch).eq('id', id)
+      if (!isDemo) {
+        const { error } = await supabase.from('perfis').update(patch).eq('id', id)
+        reportError(error, 'atualizar perfil')
+      }
     },
     [isDemo]
   )
@@ -150,11 +167,12 @@ export function DataProvider({ children }) {
         setContas((prev) => [...prev, nova])
         return nova
       }
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('contas')
         .insert({ perfil_id: activeProfileId, ...payload })
         .select()
         .single()
+      if (reportError(error, 'criar conta')) return null
       if (data) setContas((prev) => [...prev, data])
       return data
     },
@@ -164,7 +182,10 @@ export function DataProvider({ children }) {
   const updateConta = useCallback(
     async (id, patch) => {
       setContas((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
-      if (!isDemo) await supabase.from('contas').update(patch).eq('id', id)
+      if (!isDemo) {
+        const { error } = await supabase.from('contas').update(patch).eq('id', id)
+        reportError(error, 'atualizar conta')
+      }
     },
     [isDemo]
   )
@@ -177,11 +198,12 @@ export function DataProvider({ children }) {
         setCategorias((prev) => [...prev, nova])
         return nova
       }
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('categorias')
         .insert({ perfil_id: activeProfileId, nome, tipo, icone, cor })
         .select()
         .single()
+      if (reportError(error, 'criar categoria')) return null
       if (data) setCategorias((prev) => [...prev, data])
       return data
     },
@@ -215,7 +237,8 @@ export function DataProvider({ children }) {
         }
 
         if (!isDemo) {
-          const { data } = await supabase.from('recorrencias').insert(recorrencia).select().single()
+          const { data, error } = await supabase.from('recorrencias').insert(recorrencia).select().single()
+          if (reportError(error, 'criar recorrência')) return null
           if (data) recorrencia.id = data.id
         }
         setRecorrencias((prev) => [...prev, recorrencia])
@@ -240,8 +263,12 @@ export function DataProvider({ children }) {
         }
 
         if (!isDemo) {
-          const { data } = await supabase.from('transacoes').insert(novas).select()
-          if (data) return setTransacoes((prev) => [...prev, ...data])
+          const { data, error } = await supabase.from('transacoes').insert(novas).select()
+          if (reportError(error, 'criar transações recorrentes')) return null
+          if (data) {
+            setTransacoes((prev) => [...prev, ...data])
+            return data
+          }
         }
         setTransacoes((prev) => [...prev, ...novas])
         return novas
@@ -252,7 +279,8 @@ export function DataProvider({ children }) {
         setTransacoes((prev) => [...prev, nova])
         return nova
       }
-      const { data } = await supabase.from('transacoes').insert(base).select().single()
+      const { data, error } = await supabase.from('transacoes').insert(base).select().single()
+      if (reportError(error, 'criar transação')) return null
       if (data) setTransacoes((prev) => [...prev, data])
       return data
     },
@@ -265,7 +293,10 @@ export function DataProvider({ children }) {
       if (!t) return
       const novoStatus = t.tipo === 'receita' ? 'recebido' : 'pago'
       setTransacoes((prev) => prev.map((x) => (x.id === id ? { ...x, status: novoStatus } : x)))
-      if (!isDemo) await supabase.from('transacoes').update({ status: novoStatus }).eq('id', id)
+      if (!isDemo) {
+        const { error } = await supabase.from('transacoes').update({ status: novoStatus }).eq('id', id)
+        reportError(error, 'consolidar transação')
+      }
     },
     [isDemo, transacoes]
   )
@@ -273,7 +304,10 @@ export function DataProvider({ children }) {
   const updateTransacao = useCallback(
     async (id, patch) => {
       setTransacoes((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)))
-      if (!isDemo) await supabase.from('transacoes').update(patch).eq('id', id)
+      if (!isDemo) {
+        const { error } = await supabase.from('transacoes').update(patch).eq('id', id)
+        reportError(error, 'editar transação')
+      }
     },
     [isDemo]
   )
@@ -288,12 +322,18 @@ export function DataProvider({ children }) {
           .filter((x) => x.recorrencia_id === alvo.recorrencia_id && x.data >= alvo.data)
           .map((x) => x.id)
         setTransacoes((prev) => prev.filter((x) => !idsRemover.includes(x.id)))
-        if (!isDemo) await supabase.from('transacoes').delete().in('id', idsRemover)
+        if (!isDemo) {
+          const { error } = await supabase.from('transacoes').delete().in('id', idsRemover)
+          reportError(error, 'excluir transações')
+        }
         return
       }
 
       setTransacoes((prev) => prev.filter((x) => x.id !== id))
-      if (!isDemo) await supabase.from('transacoes').delete().eq('id', id)
+      if (!isDemo) {
+        const { error } = await supabase.from('transacoes').delete().eq('id', id)
+        reportError(error, 'excluir transação')
+      }
     },
     [isDemo, transacoes]
   )
@@ -306,7 +346,8 @@ export function DataProvider({ children }) {
         setNotas((prev) => [nova, ...prev])
         return nova
       }
-      const { data } = await supabase.from('notas').insert({ usuario_id: user.id, titulo, conteudo: '' }).select().single()
+      const { data, error } = await supabase.from('notas').insert({ usuario_id: user.id, titulo, conteudo: '' }).select().single()
+      if (reportError(error, 'criar nota')) return null
       if (data) setNotas((prev) => [data, ...prev])
       return data
     },
@@ -316,7 +357,10 @@ export function DataProvider({ children }) {
   const updateNota = useCallback(
     async (id, patch) => {
       setNotas((prev) => prev.map((n) => (n.id === id ? { ...n, ...patch, atualizado_em: new Date().toISOString() } : n)))
-      if (!isDemo) await supabase.from('notas').update(patch).eq('id', id)
+      if (!isDemo) {
+        const { error } = await supabase.from('notas').update(patch).eq('id', id)
+        reportError(error, 'salvar nota')
+      }
     },
     [isDemo]
   )
@@ -324,7 +368,10 @@ export function DataProvider({ children }) {
   const deleteNota = useCallback(
     async (id) => {
       setNotas((prev) => prev.filter((n) => n.id !== id))
-      if (!isDemo) await supabase.from('notas').delete().eq('id', id)
+      if (!isDemo) {
+        const { error } = await supabase.from('notas').delete().eq('id', id)
+        reportError(error, 'excluir nota')
+      }
     },
     [isDemo]
   )
@@ -337,11 +384,12 @@ export function DataProvider({ children }) {
         setWishlist((prev) => [...prev, novo])
         return novo
       }
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('wishlist_itens')
         .insert({ perfil_id: activeProfileId, ...item })
         .select()
         .single()
+      if (reportError(error, 'adicionar à lista de desejos')) return null
       if (data) setWishlist((prev) => [...prev, data])
       return data
     },
@@ -351,7 +399,10 @@ export function DataProvider({ children }) {
   const deleteWishlistItem = useCallback(
     async (id) => {
       setWishlist((prev) => prev.filter((w) => w.id !== id))
-      if (!isDemo) await supabase.from('wishlist_itens').delete().eq('id', id)
+      if (!isDemo) {
+        const { error } = await supabase.from('wishlist_itens').delete().eq('id', id)
+        reportError(error, 'excluir item da lista de desejos')
+      }
     },
     [isDemo]
   )
@@ -360,7 +411,10 @@ export function DataProvider({ children }) {
     async (item, transacaoPayload) => {
       await addTransacao({ ...transacaoPayload, valor: transacaoPayload.valor ?? item.preco })
       setWishlist((prev) => prev.filter((w) => w.id !== item.id))
-      if (!isDemo) await supabase.from('wishlist_itens').delete().eq('id', item.id)
+      if (!isDemo) {
+        const { error } = await supabase.from('wishlist_itens').delete().eq('id', item.id)
+        reportError(error, 'remover item comprado')
+      }
     },
     [isDemo, addTransacao]
   )
