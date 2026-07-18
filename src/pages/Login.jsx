@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
-import { IconWallet, IconMailCheck } from '@tabler/icons-react'
+import { IconMailCheck } from '@tabler/icons-react'
+import logo from '../assets/logo.svg'
 
 const EMAIL_KEY = 'financeiro:last-email'
 
@@ -69,12 +70,7 @@ export default function Login() {
   return (
     <div className="noise-bg min-h-screen flex flex-col justify-center px-6 max-w-sm mx-auto">
       <div className="flex flex-col items-center mb-8">
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
-          style={{ background: 'var(--accent-bg)' }}
-        >
-          <IconWallet size={26} style={{ color: 'var(--accent-color)' }} />
-        </div>
+        <img src={logo} alt="Financeiro" className="w-14 h-14 mb-3" />
         <h1 className="text-lg font-medium">Financeiro</h1>
         <p className="text-xs text-text-secondary mt-1">Pessoal e empresa, no mesmo lugar</p>
       </div>

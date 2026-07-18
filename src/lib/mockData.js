@@ -2,7 +2,8 @@
 // sem precisar de conta ou Supabase configurado.
 //
 // As datas são calculadas relativas a hoje (não fixas), pra funcionar bem
-// independente de quando o app é testado.
+// independente de quando o app é testado. O histórico é montado pra ficar
+// realista: saldo positivo, receita cobrindo despesa em todos os meses.
 
 const hoje = new Date()
 
@@ -34,52 +35,99 @@ export const mockCategorias = [
   { id: 'cat-assinaturas', perfil_id: 'p-pessoal', nome: 'Assinaturas', tipo: 'despesa', icone: 'ti-device-laptop', cor: '#c96a2e' },
   { id: 'cat-eletronicos', perfil_id: 'p-pessoal', nome: 'Eletrônicos', tipo: 'despesa', icone: 'ti-device-gamepad-2', cor: '#7a4a25' },
   { id: 'cat-alimentacao', perfil_id: 'p-pessoal', nome: 'Alimentação', tipo: 'despesa', icone: 'ti-shopping-cart', cor: '#d9b56a' },
+  { id: 'cat-transporte', perfil_id: 'p-pessoal', nome: 'Transporte', tipo: 'despesa', icone: 'ti-car', cor: '#6ab8d9' },
+  { id: 'cat-lazer', perfil_id: 'p-pessoal', nome: 'Lazer', tipo: 'despesa', icone: 'ti-movie', cor: '#c084e0' },
   { id: 'cat-renda', perfil_id: 'p-pessoal', nome: 'Renda', tipo: 'receita', icone: 'ti-cash', cor: '#4fce7a' },
+  { id: 'cat-extra', perfil_id: 'p-pessoal', nome: 'Renda extra', tipo: 'receita', icone: 'ti-briefcase', cor: '#7fd88f' },
+  { id: 'cat-rendimento', perfil_id: 'p-pessoal', nome: 'Rendimento', tipo: 'receita', icone: 'ti-trending-up', cor: '#4fce7a' },
   { id: 'cat-fornecedor', perfil_id: 'p-empresa', nome: 'Fornecedores', tipo: 'despesa', icone: 'ti-truck', cor: '#4fce7a' },
+  { id: 'cat-marketing', perfil_id: 'p-empresa', nome: 'Marketing', tipo: 'despesa', icone: 'ti-speakerphone', cor: '#6ab8d9' },
   { id: 'cat-vendas', perfil_id: 'p-empresa', nome: 'Vendas', tipo: 'receita', icone: 'ti-trending-up', cor: '#4fce7a' },
+  { id: 'cat-servicos', perfil_id: 'p-empresa', nome: 'Serviços', tipo: 'receita', icone: 'ti-briefcase', cor: '#7fd88f' },
 ]
 
 export const mockRecorrencias = [
-  { id: 'rec-aluguel', perfil_id: 'p-pessoal', tipo: 'fixa', valor_original: 1200, data_inicio: dataNoMes(6, 5), numero_parcelas: null, ativa: true },
+  { id: 'rec-aluguel', perfil_id: 'p-pessoal', tipo: 'fixa', valor_original: 1200, data_inicio: dataNoMes(5, 5), numero_parcelas: null, ativa: true },
   { id: 'rec-cartao-3', perfil_id: 'p-pessoal', tipo: 'parcelada', valor_original: 100, data_inicio: dataNoMes(2, 12), numero_parcelas: 10, ativa: true },
 ]
 
-// Despesas distribuídas nos últimos meses, pra popular o gráfico anual
-const despesasHistorico = [
-  { mes: 6, dia: 5, cat: 'cat-moradia', conta: 'c-corrente', valor: 1200 },
-  { mes: 5, dia: 5, cat: 'cat-moradia', conta: 'c-corrente', valor: 1200 },
-  { mes: 4, dia: 5, cat: 'cat-moradia', conta: 'c-corrente', valor: 1200 },
-  { mes: 3, dia: 5, cat: 'cat-moradia', conta: 'c-corrente', valor: 1200 },
-  { mes: 5, dia: 18, cat: 'cat-alimentacao', conta: 'c-corrente', valor: 420 },
-  { mes: 4, dia: 22, cat: 'cat-alimentacao', conta: 'c-corrente', valor: 380 },
-  { mes: 3, dia: 14, cat: 'cat-alimentacao', conta: 'c-corrente', valor: 510 },
-  { mes: 2, dia: 20, cat: 'cat-alimentacao', conta: 'c-corrente', valor: 340 },
-  { mes: 1, dia: 10, cat: 'cat-eletronicos', conta: 'c-cartao', valor: 100 },
-  { mes: 4, dia: 8, cat: 'cat-assinaturas', conta: 'c-corrente', valor: 120 },
-  { mes: 2, dia: 8, cat: 'cat-assinaturas', conta: 'c-corrente', valor: 120 },
+// Histórico mensal (pessoal) -- meses passados (1 a 5), todos consolidados,
+// com receita sempre cobrindo despesa pra o saldo ficar positivo e realista.
+const historicoPessoal = [
+  { mes: 5, salario: 4200, aluguel: 1200, alimentacao: 380, transporte: 180, assinaturas: 120, lazer: 0, extra: 0, poupanca: 200 },
+  { mes: 4, salario: 4200, aluguel: 1200, alimentacao: 420, transporte: 210, assinaturas: 120, lazer: 150, extra: 600, poupanca: 250 },
+  { mes: 3, salario: 4200, aluguel: 1200, alimentacao: 510, transporte: 190, assinaturas: 120, lazer: 0, extra: 0, poupanca: 200 },
+  { mes: 2, salario: 4300, aluguel: 1200, alimentacao: 340, transporte: 220, assinaturas: 120, lazer: 220, extra: 900, poupanca: 300 },
+  { mes: 1, salario: 4300, aluguel: 1200, alimentacao: 460, transporte: 175, assinaturas: 120, lazer: 90, extra: 0, poupanca: 250 },
 ]
 
-export const mockTransacoes = [
-  ...despesasHistorico.map((d, i) => ({
-    id: 'th' + i,
+const transacoesHistoricoPessoal = historicoPessoal.flatMap((m, i) => {
+  const base = [
+    { id: `hp-sal-${i}`, categoria_id: 'cat-renda', conta_id: 'c-corrente', tipo: 'receita', valor: m.salario, dia: 1, anotacao: 'Salário' },
+    { id: `hp-alu-${i}`, categoria_id: 'cat-moradia', conta_id: 'c-corrente', tipo: 'despesa', valor: m.aluguel, dia: 5, anotacao: 'Aluguel', recorrencia_id: 'rec-aluguel' },
+    { id: `hp-ali-${i}`, categoria_id: 'cat-alimentacao', conta_id: 'c-corrente', tipo: 'despesa', valor: m.alimentacao, dia: 17, anotacao: 'Mercado' },
+    { id: `hp-tra-${i}`, categoria_id: 'cat-transporte', conta_id: 'c-corrente', tipo: 'despesa', valor: m.transporte, dia: 10, anotacao: 'Combustível' },
+    { id: `hp-ass-${i}`, categoria_id: 'cat-assinaturas', conta_id: 'c-corrente', tipo: 'despesa', valor: m.assinaturas, dia: 8, anotacao: 'Internet + streaming' },
+    { id: `hp-poup-${i}`, categoria_id: 'cat-rendimento', conta_id: 'c-poupanca', tipo: 'receita', valor: m.poupanca, dia: 28, anotacao: 'Rendimento' },
+  ]
+  if (m.lazer > 0) base.push({ id: `hp-laz-${i}`, categoria_id: 'cat-lazer', conta_id: 'c-corrente', tipo: 'despesa', valor: m.lazer, dia: 22, anotacao: 'Cinema/saída' })
+  if (m.extra > 0) base.push({ id: `hp-ext-${i}`, categoria_id: 'cat-extra', conta_id: 'c-corrente', tipo: 'receita', valor: m.extra, dia: 20, anotacao: 'Freelance' })
+  return base.map((t) => ({
     perfil_id: 'p-pessoal',
-    conta_id: d.conta,
-    categoria_id: d.cat,
-    recorrencia_id: d.cat === 'cat-moradia' ? 'rec-aluguel' : null,
-    tipo: 'despesa',
-    valor: d.valor,
-    data: dataNoMes(d.mes, d.dia),
-    anotacao: '',
-    status: d.mes === 0 ? 'pendente' : 'pago',
+    recorrencia_id: null,
+    status: t.tipo === 'receita' ? 'recebido' : 'pago',
     parcela_atual: null,
-  })),
-  { id: 't1', perfil_id: 'p-pessoal', conta_id: 'c-corrente', categoria_id: 'cat-moradia', recorrencia_id: 'rec-aluguel', tipo: 'despesa', valor: 1200, data: dataNoMes(0, 5), anotacao: '', status: 'pendente', parcela_atual: null },
-  { id: 't2', perfil_id: 'p-pessoal', conta_id: 'c-corrente', categoria_id: 'cat-assinaturas', recorrencia_id: null, tipo: 'despesa', valor: 120, data: dataRelativa(3), anotacao: 'Internet + streaming', status: 'pendente', parcela_atual: null },
-  { id: 't3', perfil_id: 'p-pessoal', conta_id: 'c-cartao', categoria_id: 'cat-eletronicos', recorrencia_id: 'rec-cartao-3', tipo: 'despesa', valor: 100, data: dataRelativa(5), anotacao: 'Fone bluetooth', status: 'pendente', parcela_atual: 3 },
-  { id: 't4', perfil_id: 'p-pessoal', conta_id: 'c-corrente', categoria_id: 'cat-renda', recorrencia_id: null, tipo: 'receita', valor: 4200, data: dataNoMes(0, 1), anotacao: 'Salário', status: 'recebido', parcela_atual: null },
-  { id: 't5', perfil_id: 'p-pessoal', conta_id: 'c-corrente', categoria_id: 'cat-alimentacao', recorrencia_id: null, tipo: 'despesa', valor: 340, data: dataRelativa(-10), anotacao: '', status: 'pago', parcela_atual: null },
-  { id: 't6', perfil_id: 'p-empresa', conta_id: 'c-empresa', categoria_id: 'cat-vendas', recorrencia_id: null, tipo: 'receita', valor: 8500, data: dataNoMes(0, 3), anotacao: '', status: 'recebido', parcela_atual: null },
-  { id: 't7', perfil_id: 'p-empresa', conta_id: 'c-empresa', categoria_id: 'cat-fornecedor', recorrencia_id: null, tipo: 'despesa', valor: 2100, data: dataRelativa(7), anotacao: '', status: 'pendente', parcela_atual: null },
+    ...t,
+    data: dataNoMes(m.mes, t.dia),
+  }))
+})
+
+// Histórico mensal (empresa)
+const historicoEmpresa = [
+  { mes: 5, vendas: 7200, servicos: 1400, fornecedor: 2100, marketing: 600 },
+  { mes: 4, vendas: 8100, servicos: 900, fornecedor: 2400, marketing: 750 },
+  { mes: 3, vendas: 6800, servicos: 1600, fornecedor: 1900, marketing: 500 },
+  { mes: 2, vendas: 8500, servicos: 1100, fornecedor: 2200, marketing: 800 },
+  { mes: 1, vendas: 7900, servicos: 1300, fornecedor: 2050, marketing: 650 },
+]
+
+const transacoesHistoricoEmpresa = historicoEmpresa.flatMap((m, i) => [
+  { id: `he-ven-${i}`, categoria_id: 'cat-vendas', conta_id: 'c-empresa', tipo: 'receita', valor: m.vendas, dia: 5, anotacao: '' },
+  { id: `he-ser-${i}`, categoria_id: 'cat-servicos', conta_id: 'c-empresa', tipo: 'receita', valor: m.servicos, dia: 18, anotacao: 'Consultoria' },
+  { id: `he-for-${i}`, categoria_id: 'cat-fornecedor', conta_id: 'c-empresa', tipo: 'despesa', valor: m.fornecedor, dia: 12, anotacao: '' },
+  { id: `he-mkt-${i}`, categoria_id: 'cat-marketing', conta_id: 'c-empresa', tipo: 'despesa', valor: m.marketing, dia: 15, anotacao: 'Anúncios' },
+].map((t) => ({
+  perfil_id: 'p-empresa',
+  recorrencia_id: null,
+  status: t.tipo === 'receita' ? 'recebido' : 'pago',
+  parcela_atual: null,
+  ...t,
+  data: dataNoMes(m.mes, t.dia),
+})))
+
+// Mês atual: mistura de já pago/recebido + pendências (pra mostrar "próximas transações")
+const mesAtualPessoal = [
+  { id: 't-sal', categoria_id: 'cat-renda', conta_id: 'c-corrente', tipo: 'receita', valor: 4300, data: dataNoMes(0, 1), anotacao: 'Salário', status: 'recebido' },
+  { id: 't-ali', categoria_id: 'cat-alimentacao', conta_id: 'c-corrente', tipo: 'despesa', valor: 260, data: dataRelativa(-6), anotacao: 'Mercado', status: 'pago' },
+  { id: 't-poup', categoria_id: 'cat-rendimento', conta_id: 'c-poupanca', tipo: 'receita', valor: 260, data: dataRelativa(-3), anotacao: 'Rendimento', status: 'recebido' },
+  { id: 't1', categoria_id: 'cat-moradia', conta_id: 'c-corrente', tipo: 'despesa', valor: 1200, data: dataNoMes(0, 5), anotacao: 'Aluguel', status: 'pendente', recorrencia_id: 'rec-aluguel' },
+  { id: 't2', categoria_id: 'cat-assinaturas', conta_id: 'c-corrente', tipo: 'despesa', valor: 120, data: dataRelativa(3), anotacao: 'Internet + streaming', status: 'pendente' },
+  { id: 't3', categoria_id: 'cat-eletronicos', conta_id: 'c-cartao', tipo: 'despesa', valor: 100, data: dataRelativa(5), anotacao: 'Fone bluetooth', status: 'pendente', recorrencia_id: 'rec-cartao-3', parcela_atual: 3 },
+  { id: 't-tra', categoria_id: 'cat-transporte', conta_id: 'c-corrente', tipo: 'despesa', valor: 195, data: dataRelativa(8), anotacao: 'Combustível', status: 'pendente' },
+].map((t) => ({ perfil_id: 'p-pessoal', recorrencia_id: null, parcela_atual: null, ...t }))
+
+const mesAtualEmpresa = [
+  { id: 't6', categoria_id: 'cat-vendas', conta_id: 'c-empresa', tipo: 'receita', valor: 8100, data: dataNoMes(0, 3), anotacao: '', status: 'recebido' },
+  { id: 't-serv', categoria_id: 'cat-servicos', conta_id: 'c-empresa', tipo: 'receita', valor: 1200, data: dataRelativa(-4), anotacao: 'Consultoria', status: 'recebido' },
+  { id: 't7', categoria_id: 'cat-fornecedor', conta_id: 'c-empresa', tipo: 'despesa', valor: 2100, data: dataRelativa(7), anotacao: '', status: 'pendente' },
+  { id: 't-mkt', categoria_id: 'cat-marketing', conta_id: 'c-empresa', tipo: 'despesa', valor: 700, data: dataRelativa(10), anotacao: 'Anúncios', status: 'pendente' },
+].map((t) => ({ perfil_id: 'p-empresa', recorrencia_id: null, parcela_atual: null, ...t }))
+
+export const mockTransacoes = [
+  ...transacoesHistoricoPessoal,
+  ...transacoesHistoricoEmpresa,
+  ...mesAtualPessoal,
+  ...mesAtualEmpresa,
 ]
 
 export const mockNotas = [
