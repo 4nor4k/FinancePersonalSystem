@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Overlay from './Overlay'
+import { CORES } from '../lib/colors'
 
-const CORES = ['#ff8a3d', '#d9b56a', '#7fd88f', '#6ab8d9', '#a892e0', '#8a8a87']
 const ICONES = ['ti-building-bank', 'ti-pig-money', 'ti-credit-card', 'ti-cash', 'ti-wallet', 'ti-coin']
 
 export default function NovaContaModal({ onClose, onCreated, addConta }) {
@@ -68,7 +68,7 @@ export default function NovaContaModal({ onClose, onCreated, addConta }) {
         ))}
       </div>
       <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
-      <div className="flex gap-2 mb-5">
+      <div className="flex flex-wrap gap-2 mb-5">
         {CORES.map((c) => (
           <button
             key={c}

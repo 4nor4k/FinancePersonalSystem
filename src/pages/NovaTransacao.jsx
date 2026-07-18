@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { IconX, IconPlus, IconChevronDown, IconArrowRight, IconCheck } from '@tabler/icons-react'
+import { IconX, IconPlus, IconChevronDown } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import NovaContaModal from '../components/NovaContaModal'
 import NovaCategoriaModal from '../components/NovaCategoriaModal'
@@ -22,7 +22,6 @@ export default function NovaTransacao() {
   const [repetirAberto, setRepetirAberto] = useState(false)
   const [repetirTipo, setRepetirTipo] = useState('fixa')
   const [numeroParcelas, setNumeroParcelas] = useState(10)
-  const [confirmado, setConfirmado] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [modalConta, setModalConta] = useState(false)
   const [modalCategoria, setModalCategoria] = useState(false)
@@ -54,7 +53,7 @@ export default function NovaTransacao() {
         numeroParcelas: repetirTipo === 'parcelada' ? Number(numeroParcelas) : undefined,
       })
     }
-    setTimeout(() => navigate('/transacoes'), 500)
+    navigate('/transacoes')
   }
 
   return (
@@ -195,18 +194,14 @@ export default function NovaTransacao() {
         </div>
       )}
 
-      {transacaoEditando ? (
-        <button
-          onClick={handleConfirm}
-          disabled={!valor || !contaId || salvando}
-          className="w-full rounded-full py-3.5 text-sm font-medium"
-          style={{ background: 'var(--accent-color)', color: '#1a0d05', opacity: !valor || !contaId ? 0.5 : 1 }}
-        >
-          Salvar alterações
-        </button>
-      ) : (
-        <SwipeConfirm onConfirm={handleConfirm} confirmado={confirmado} setConfirmado={setConfirmado} disabled={!valor || !contaId || salvando} />
-      )}
+      <button
+        onClick={handleConfirm}
+        disabled={!valor || !contaId || salvando}
+        className="w-full rounded-full py-3.5 text-sm font-medium"
+        style={{ background: 'var(--accent-color)', color: '#1a0d05', opacity: !valor || !contaId ? 0.5 : 1 }}
+      >
+        {salvando ? 'Salvando...' : transacaoEditando ? 'Salvar alterações' : 'Salvar transação'}
+      </button>
 
       {modalConta && (
         <NovaContaModal
@@ -241,77 +236,5 @@ function IconButton({ onClick }) {
     <button onClick={onClick} className="bg-bg-card rounded-lg w-11 flex items-center justify-center text-text-secondary">
       <IconPlus size={16} />
     </button>
-  )
-}
-
-function SwipeConfirm({ onConfirm, confirmado, setConfirmado, disabled }) {
-  const trackRef = useRef(null)
-  const handleRef = useRef(null)
-  const [left, setLeft] = useState(4)
-  const dragging = useRef(false)
-  const startX = useRef(0)
-  const startLeft = useRef(4)
-
-  function maxLeft() {
-    if (!trackRef.current || !handleRef.current) return 200
-    return trackRef.current.offsetWidth - handleRef.current.offsetWidth - 4
-  }
-
-  function onDown(e) {
-    if (confirmado || disabled) return
-    dragging.current = true
-    startX.current = e.touches ? e.touches[0].clientX : e.clientX
-    startLeft.current = left
-  }
-  function onMove(e) {
-    if (!dragging.current) return
-    const x = e.touches ? e.touches[0].clientX : e.clientX
-    const delta = x - startX.current
-    const max = maxLeft()
-    setLeft(Math.min(Math.max(startLeft.current + delta, 4), max))
-  }
-  function onUp() {
-    if (!dragging.current) return
-    dragging.current = false
-    const max = maxLeft()
-    const pct = (left - 4) / (max - 4)
-    if (pct >= 0.85) {
-      setLeft(max)
-      setConfirmado(true)
-      onConfirm()
-    } else {
-      setLeft(4)
-    }
-  }
-
-  return (
-    <div>
-      <p className="text-[11px] text-text-muted text-center mb-2">
-        {disabled ? 'Preencha valor e conta pra continuar' : 'Deslize para confirmar'}
-      </p>
-      <div
-        ref={trackRef}
-        className="relative rounded-full h-[52px] overflow-hidden"
-        style={{ background: confirmado ? '#2f7a4f' : '#141414', opacity: disabled ? 0.5 : 1 }}
-        onMouseMove={onMove}
-        onMouseUp={onUp}
-        onMouseLeave={onUp}
-        onTouchMove={onMove}
-        onTouchEnd={onUp}
-      >
-        <p className="absolute inset-0 flex items-center justify-center text-sm text-text-muted">
-          {confirmado ? 'Transação salva' : 'Salvar transação'}
-        </p>
-        <div
-          ref={handleRef}
-          onMouseDown={onDown}
-          onTouchStart={onDown}
-          className="absolute top-1 w-11 h-11 rounded-full bg-[#e5e5e3] flex items-center justify-center cursor-grab"
-          style={{ left }}
-        >
-          {confirmado ? <IconCheck size={18} color="#101010" /> : <IconArrowRight size={18} color="#101010" />}
-        </div>
-      </div>
-    </div>
   )
 }

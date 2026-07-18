@@ -1,19 +1,20 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconPlus, IconDotsVertical } from '@tabler/icons-react'
+import { IconChevronLeft, IconPlus, IconEdit, IconTrash } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
+import { CORES } from '../lib/colors'
 
-const CORES = ['#ff8a3d', '#d9b56a', '#7fd88f', '#6ab8d9', '#a892e0', '#8a8a87']
 const ICONES = ['ti-home', 'ti-car', 'ti-shopping-cart', 'ti-device-laptop', 'ti-tools', 'ti-heart', 'ti-plane', 'ti-school', 'ti-paw', 'ti-gift', 'ti-cash', 'ti-dots']
 
 export default function Categorias() {
   const navigate = useNavigate()
-  const { categorias, addCategoria } = useData()
+  const { categorias, addCategoria, updateCategoria, deleteCategoria } = useData()
   const [tipo, setTipo] = useState('despesa')
   const [criando, setCriando] = useState(false)
   const [nome, setNome] = useState('')
   const [icone, setIcone] = useState(ICONES[0])
   const [cor, setCor] = useState(CORES[0])
+  const [editandoId, setEditandoId] = useState(null)
 
   const filtradas = categorias.filter((c) => c.tipo === tipo)
 
@@ -22,6 +23,13 @@ export default function Categorias() {
     await addCategoria({ nome, tipo, icone, cor })
     setNome('')
     setCriando(false)
+  }
+
+  async function handleExcluir(id) {
+    if (confirm('Excluir essa categoria? Transações que já usam ela continuam existindo.')) {
+      await deleteCategoria(id)
+      setEditandoId(null)
+    }
   }
 
   return (
@@ -71,7 +79,7 @@ export default function Categorias() {
             ))}
           </div>
           <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
-          <div className="flex gap-2 mb-3.5">
+          <div className="flex flex-wrap gap-2 mb-3.5">
             {CORES.map((c) => (
               <button
                 key={c}
@@ -93,14 +101,60 @@ export default function Categorias() {
 
       <div className="flex flex-col gap-2">
         {filtradas.map((c) => (
-          <div key={c.id} className="bg-bg-card rounded-xl p-3 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#1a1a1a' }}>
-                <i className={`ti ${c.icone}`} style={{ fontSize: 15, color: c.cor }} />
+          <div key={c.id} className="bg-bg-card rounded-xl overflow-hidden">
+            <div className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#1a1a1a' }}>
+                  <i className={`ti ${c.icone}`} style={{ fontSize: 15, color: c.cor }} />
+                </div>
+                <span className="text-sm">{c.nome}</span>
               </div>
-              <span className="text-sm">{c.nome}</span>
+              <button onClick={() => setEditandoId(editandoId === c.id ? null : c.id)} className="text-text-muted">
+                <IconEdit size={15} />
+              </button>
             </div>
-            <IconDotsVertical size={16} className="text-text-muted" />
+
+            {editandoId === c.id && (
+              <div className="px-3 pb-3">
+                <input
+                  value={c.nome}
+                  onChange={(e) => updateCategoria(c.id, { nome: e.target.value })}
+                  className="w-full bg-bg-raised rounded-lg px-3 py-2.5 text-sm outline-none mb-3"
+                />
+                <p className="text-[11px] text-text-muted mb-1.5">Ícone</p>
+                <div className="grid grid-cols-6 gap-2 mb-3">
+                  {ICONES.map((ic) => (
+                    <button
+                      key={ic}
+                      onClick={() => updateCategoria(c.id, { icone: ic })}
+                      className="aspect-square rounded-lg flex items-center justify-center"
+                      style={{ background: ic === c.icone ? '#232323' : '#1a1a1a' }}
+                    >
+                      <i className={`ti ${ic}`} style={{ fontSize: 15, color: ic === c.icone ? '#e5e5e3' : '#8a8a87' }} />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {CORES.map((cor) => (
+                    <button
+                      key={cor}
+                      onClick={() => updateCategoria(c.id, { cor })}
+                      className="w-6 h-6 rounded-full"
+                      style={{ background: cor, border: cor === c.cor ? '2px solid #e5e5e3' : '2px solid transparent' }}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={() => handleExcluir(c.id)}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-medium"
+                  style={{ background: '#1e1414', color: '#e2716f' }}
+                >
+                  <IconTrash size={14} />
+                  Excluir categoria
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {filtradas.length === 0 && (

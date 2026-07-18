@@ -210,60 +210,89 @@ export function DataProvider({ children }) {
     [isDemo, activeProfileId]
   )
 
+  const updateCategoria = useCallback(
+    async (id, patch) => {
+      setCategorias((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
+      if (!isDemo) {
+        const { error } = await supabase.from('categorias').update(patch).eq('id', id)
+        reportError(error, 'atualizar categoria')
+      }
+    },
+    [isDemo]
+  )
+
+  const deleteCategoria = useCallback(
+    async (id) => {
+      setCategorias((prev) => prev.filter((c) => c.id !== id))
+      if (!isDemo) {
+        const { error } = await supabase.from('categorias').delete().eq('id', id)
+        reportError(error, 'excluir categoria')
+      }
+    },
+    [isDemo]
+  )
+
   // ---------- Transações ----------
   const addTransacao = useCallback(
     async (payload) => {
+      // repetir/numeroParcelas são só controle da tela -- não são colunas
+      // da tabela, então tiramos eles antes de montar o que vai pro banco.
+      const { repetir, numeroParcelas, ...resto } = payload
       const base = {
         perfil_id: activeProfileId,
         tipo: 'despesa',
         status: 'pendente',
         data: new Date().toISOString().slice(0, 10),
-        ...payload,
+        ...resto,
       }
 
       // Recorrência: gera as ocorrências futuras de uma vez (simplificado --
       // fixa gera 12 meses à frente, parcelada gera o número de parcelas).
-      if (payload.repetir === 'fixa' || payload.repetir === 'parcelada') {
-        const numeroParcelas = payload.repetir === 'parcelada' ? payload.numeroParcelas || 2 : 12
-        const recorrenciaId = 'rec-' + Date.now()
-        const recorrencia = {
-          id: recorrenciaId,
-          perfil_id: activeProfileId,
-          tipo: payload.repetir,
+      if (repetir === 'fixa' || repetir === 'parcelada') {
+        const numParcelas = repetir === 'parcelada' ? numeroParcelas || 2 : 12
+        let recorrenciaId = 'rec-' + Date.now()
+        const recorrenciaBase = {
+          tipo: repetir,
           valor_original: base.valor,
           data_inicio: base.data,
-          numero_parcelas: payload.repetir === 'parcelada' ? numeroParcelas : null,
+          numero_parcelas: repetir === 'parcelada' ? numParcelas : null,
           ativa: true,
         }
 
         if (!isDemo) {
-          const { data, error } = await supabase.from('recorrencias').insert(recorrencia).select().single()
+          const { data, error } = await supabase
+            .from('recorrencias')
+            .insert({ perfil_id: activeProfileId, ...recorrenciaBase })
+            .select()
+            .single()
           if (reportError(error, 'criar recorrência')) return null
-          if (data) recorrencia.id = data.id
+          if (data) recorrenciaId = data.id
         }
-        setRecorrencias((prev) => [...prev, recorrencia])
+        setRecorrencias((prev) => [...prev, { id: recorrenciaId, perfil_id: activeProfileId, ...recorrenciaBase }])
 
         const novas = []
         const [ano, mes, dia] = base.data.split('-').map(Number)
-        for (let i = 0; i < numeroParcelas; i++) {
+        for (let i = 0; i < numParcelas; i++) {
           const d = new Date(ano, mes - 1 + i, dia)
           novas.push({
             id: 't-' + Date.now() + '-' + i,
             perfil_id: activeProfileId,
             conta_id: base.conta_id,
             categoria_id: base.categoria_id,
-            recorrencia_id: recorrencia.id,
+            recorrencia_id: recorrenciaId,
             tipo: base.tipo,
             valor: base.valor,
             data: d.toISOString().slice(0, 10),
             anotacao: base.anotacao || '',
             status: 'pendente',
-            parcela_atual: payload.repetir === 'parcelada' ? i + 1 : null,
+            parcela_atual: repetir === 'parcelada' ? i + 1 : null,
           })
         }
 
         if (!isDemo) {
-          const { data, error } = await supabase.from('transacoes').insert(novas).select()
+          // Tira o "id" fake local -- o banco gera o UUID real sozinho.
+          const paraInserir = novas.map(({ id, ...rest }) => rest)
+          const { data, error } = await supabase.from('transacoes').insert(paraInserir).select()
           if (reportError(error, 'criar transações recorrentes')) return null
           if (data) {
             setTransacoes((prev) => [...prev, ...data])
@@ -436,6 +465,8 @@ export function DataProvider({ children }) {
     updateConta,
     categorias: categorias.filter((c) => c.perfil_id === activeProfileId),
     addCategoria,
+    updateCategoria,
+    deleteCategoria,
     recorrencias,
     transacoes: transacoes.filter((t) => t.perfil_id === activeProfileId),
     addTransacao,

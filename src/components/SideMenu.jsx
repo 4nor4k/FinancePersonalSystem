@@ -15,8 +15,8 @@ import {
 import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import Overlay from './Overlay'
+import { CORES } from '../lib/colors'
 
-const CORES = ['#ff8a3d', '#4fce7a', '#5ab8e0', '#c084e0', '#e05a8a', '#e0d15a']
 
 const NAV_ITEMS = [
   { label: 'Contas', icon: IconWallet, path: '/contas' },
@@ -146,7 +146,7 @@ export default function SideMenu({ onClose }) {
           />
           <p className="text-[11px] text-text-muted mb-1.5">Cor de destaque</p>
           <p className="text-[10px] text-text-muted mb-3">Muda o tema do app inteiro quando esse perfil está ativo</p>
-          <div className="flex gap-2.5 mb-5">
+          <div className="flex flex-wrap gap-2.5 mb-5">
             {CORES.map((cor) => (
               <button
                 key={cor}
@@ -173,7 +173,7 @@ export default function SideMenu({ onClose }) {
             className="w-full bg-bg-raised rounded-lg px-3 py-3 text-sm outline-none mb-4 placeholder:text-text-muted"
           />
           <p className="text-[11px] text-text-muted mb-1.5">Cor de destaque</p>
-          <div className="flex gap-2.5 mb-5">
+          <div className="flex flex-wrap gap-2.5 mb-5">
             {CORES.map((cor) => (
               <button
                 key={cor}
