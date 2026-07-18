@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IconMenu2, IconEye, IconEyeOff, IconPhoto, IconChevronRight } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
@@ -25,6 +25,9 @@ export default function Dashboard() {
 
   const mask = (value) => (valuesHidden ? '••••' : value)
   const [menuAberto, setMenuAberto] = useState(false)
+  const toggleTrackRef = useRef(null)
+  const toggleBtnRefs = useRef({})
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 })
 
   const mesAtual = new Date().toISOString().slice(0, 7)
   const anoAtual = new Date().getFullYear()
@@ -96,6 +99,17 @@ export default function Dashboard() {
     .filter((t) => t.tipo === 'despesa' && t.data.slice(0, 7) === mesAtual)
     .reduce((acc, t) => acc + t.valor, 0)
 
+  useEffect(() => {
+    if (!activeProfile) return
+    const btn = toggleBtnRefs.current[activeProfile.id]
+    const track = toggleTrackRef.current
+    if (btn && track) {
+      const trackRect = track.getBoundingClientRect()
+      const btnRect = btn.getBoundingClientRect()
+      setIndicator({ left: btnRect.left - trackRect.left, width: btnRect.width })
+    }
+  }, [activeProfile, perfis.length])
+
   return (
     <div className="noise-bg max-w-md mx-auto px-4 pt-4 pb-56">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-5 pt-1">
@@ -106,17 +120,22 @@ export default function Dashboard() {
           </span>
         </div>
         <div className="flex justify-center">
-          <div className="flex items-center gap-2 bg-bg-card rounded-full p-1.5">
+          <div ref={toggleTrackRef} className="relative flex items-center gap-2 bg-bg-card rounded-full p-1.5">
+            <div
+              className="absolute top-1.5 bottom-1.5 rounded-full transition-all duration-300 ease-out"
+              style={{
+                left: indicator.left,
+                width: indicator.width,
+                background: activeProfile?.cor_bg,
+              }}
+            />
             {perfis.map((p) => (
               <button
                 key={p.id}
+                ref={(el) => (toggleBtnRefs.current[p.id] = el)}
                 onClick={() => setActiveProfileId(p.id)}
-                className="text-sm px-4 py-2 rounded-full font-medium transition-colors"
-                style={
-                  activeProfile && p.id === activeProfile.id
-                    ? { background: p.cor_bg, color: p.cor }
-                    : { color: '#8a8a87' }
-                }
+                className="relative z-10 text-sm px-4 py-2 rounded-full font-medium transition-colors duration-300"
+                style={{ color: activeProfile && p.id === activeProfile.id ? p.cor : '#8a8a87' }}
               >
                 {p.nome}
               </button>

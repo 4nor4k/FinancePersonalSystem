@@ -8,7 +8,7 @@ export default function BottomNav() {
   const navigate = useNavigate()
 
   return (
-    <div className="fixed bottom-[100px] left-0 right-0 h-[76px]">
+    <div className="fixed bottom-[30px] left-0 right-0 h-[76px]">
       <nav className="absolute left-4 right-4 bottom-0 bg-bg-card rounded-full px-5 py-3.5 flex items-center justify-around">
         <NavLink to="/" end className={linkClass}>
           <IconHome size={20} stroke={1.75} />

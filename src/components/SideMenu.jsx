@@ -63,10 +63,8 @@ export default function SideMenu({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-[82%] max-w-xs h-full bg-bg-base flex flex-col px-4 pt-5 pb-6">
-        <div className="flex items-center justify-between mb-5">
+    <div className="fixed inset-0 z-50 bg-bg-base flex flex-col px-4 pt-5 pb-6">
+      <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-bg)' }}>
               <IconUser size={17} style={{ color: 'var(--accent-color)' }} />
@@ -136,9 +134,8 @@ export default function SideMenu({ onClose }) {
           <IconLogout size={16} />
           Sair da conta
         </button>
-      </div>
 
-      {editando && (
+        {editando && (
         <Overlay onClose={() => setEditando(null)}>
           <p className="text-sm font-medium text-center mb-4">Editar perfil</p>
           <p className="text-[11px] text-text-muted mb-1.5">Nome</p>
