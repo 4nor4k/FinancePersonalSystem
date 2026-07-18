@@ -18,11 +18,11 @@ export default function Contas() {
   function saldoConta(conta) {
     const soma = transacoes
       .filter((t) => t.conta_id === conta.id && t.status !== 'pendente')
-      .reduce((acc, t) => acc + (t.tipo === 'receita' ? t.valor : -t.valor), 0)
+      .reduce((acc, t) => acc + (t.tipo === 'receita' ? Number(t.valor) || 0 : -(Number(t.valor) || 0)), 0)
     if (conta.tipo === 'cartao_credito') {
       const usado = transacoes
         .filter((t) => t.conta_id === conta.id && t.status === 'pendente' && t.tipo === 'despesa')
-        .reduce((acc, t) => acc + t.valor, 0)
+        .reduce((acc, t) => acc + (Number(t.valor) || 0), 0)
       return `${formatBRL((conta.limite || 0) - usado)} disponível`
     }
     return formatBRL(soma)

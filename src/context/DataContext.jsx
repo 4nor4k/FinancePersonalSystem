@@ -561,7 +561,7 @@ export function DataProvider({ children }) {
   // de "comprar" da wishlist).
   const aportarObjetivo = useCallback(
     async (objetivo, valorAporte, transacaoPayload) => {
-      const novoValor = (objetivo.valor_atual || 0) + valorAporte
+      const novoValor = (Number(objetivo.valor_atual) || 0) + valorAporte
       await updateObjetivo(objetivo.id, { valor_atual: novoValor })
       if (transacaoPayload) {
         await addTransacao({ ...transacaoPayload, tipo: 'despesa', valor: valorAporte })

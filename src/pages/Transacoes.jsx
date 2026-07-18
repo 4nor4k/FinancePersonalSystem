@@ -33,10 +33,10 @@ export default function Transacoes() {
 
   const totalDespesas = transacoes
     .filter((t) => t.data.slice(0, 7) === mesRef && t.tipo === 'despesa')
-    .reduce((a, t) => a + t.valor, 0)
+    .reduce((a, t) => a + (Number(t.valor) || 0), 0)
   const totalReceitas = transacoes
     .filter((t) => t.data.slice(0, 7) === mesRef && t.tipo === 'receita')
-    .reduce((a, t) => a + t.valor, 0)
+    .reduce((a, t) => a + (Number(t.valor) || 0), 0)
 
   const [nomeMes, ano] = new Date(mesRef + '-02').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).split(' de ')
 
