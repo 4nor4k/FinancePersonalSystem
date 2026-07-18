@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconChevronLeft, IconPlus, IconPhoto, IconPhotoPlus, IconX, IconTrash, IconShoppingBag } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
-import { formatBRL } from '../lib/format'
+import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber } from '../lib/format'
 
 export default function Wishlist() {
   const navigate = useNavigate()
@@ -16,7 +16,7 @@ export default function Wishlist() {
     if (!form.nome.trim()) return
     await addWishlistItem({
       nome: form.nome,
-      preco: Number(form.preco) || 0,
+      preco: currencyDisplayToNumber(form.preco),
       link_produto: form.link_produto,
       link_imagem: form.link_imagem,
       meta_data: form.meta_data || null,
@@ -110,7 +110,7 @@ export default function Wishlist() {
             )}
           </div>
           <LabeledInput label="Nome" value={form.nome} onChange={(v) => setForm((f) => ({ ...f, nome: v }))} placeholder="Ex: Fone bluetooth" />
-          <LabeledInput label="Preço estimado" value={form.preco} onChange={(v) => setForm((f) => ({ ...f, preco: v.replace(/[^0-9.]/g, '') }))} placeholder="0,00" />
+          <LabeledInput label="Preço estimado" value={form.preco} onChange={(v) => setForm((f) => ({ ...f, preco: digitsToCurrencyDisplay(v) }))} placeholder="0,00" />
           <LabeledInput label="Link do produto" value={form.link_produto} onChange={(v) => setForm((f) => ({ ...f, link_produto: v }))} placeholder="https://..." />
           <LabeledInput label="Link da imagem" value={form.link_imagem} onChange={(v) => setForm((f) => ({ ...f, link_imagem: v }))} placeholder="https://..." />
           <div className="mb-4">

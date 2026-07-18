@@ -18,7 +18,8 @@ import {
 import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import Overlay from './Overlay'
-import { CORES } from '../lib/colors'
+import { COR_PADRAO } from '../lib/colors'
+import ColorPicker from './ColorPicker'
 import { biometriaAtiva, biometriaDisponivel, registrarBiometria, desativarBiometria } from '../lib/biometria'
 
 
@@ -39,7 +40,7 @@ export default function SideMenu({ onClose }) {
   const [editando, setEditando] = useState(null)
   const [criandoAberto, setCriandoAberto] = useState(false)
   const [novoNome, setNovoNome] = useState('')
-  const [novaCor, setNovaCor] = useState(CORES[0])
+  const [novaCor, setNovaCor] = useState(COR_PADRAO)
   const [bioAtiva, setBioAtiva] = useState(biometriaAtiva())
   const [bioErro, setBioErro] = useState('')
 
@@ -78,7 +79,7 @@ export default function SideMenu({ onClose }) {
     if (!novoNome.trim()) return
     await addProfile(novoNome.trim(), novaCor)
     setNovoNome('')
-    setNovaCor(CORES[0])
+    setNovaCor(COR_PADRAO)
     setCriandoAberto(false)
   }
 
@@ -191,17 +192,8 @@ export default function SideMenu({ onClose }) {
           />
           <p className="text-[11px] text-text-muted mb-1.5">Cor de destaque</p>
           <p className="text-[10px] text-text-muted mb-3">Muda o tema do app inteiro quando esse perfil está ativo</p>
-          <div className="flex flex-wrap gap-2.5 mb-5">
-            {CORES.map((cor) => (
-              <button
-                key={cor}
-                onClick={() => setEditando({ ...editando, cor })}
-                className="w-8 h-8 rounded-full"
-                style={{ background: cor, border: cor === editando.cor ? '2px solid #e5e5e3' : '2px solid transparent' }}
-              />
-            ))}
-          </div>
-          <button onClick={salvarEdicao} className="w-full rounded-lg py-3 text-sm font-medium" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
+          <ColorPicker value={editando.cor} onChange={(cor) => setEditando({ ...editando, cor })} />
+          <button onClick={salvarEdicao} className="w-full rounded-lg py-3 text-sm font-medium mt-4" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
             Salvar
           </button>
         </Overlay>
@@ -218,17 +210,8 @@ export default function SideMenu({ onClose }) {
             className="w-full bg-bg-raised rounded-lg px-3 py-3 text-sm outline-none mb-4 placeholder:text-text-muted"
           />
           <p className="text-[11px] text-text-muted mb-1.5">Cor de destaque</p>
-          <div className="flex flex-wrap gap-2.5 mb-5">
-            {CORES.map((cor) => (
-              <button
-                key={cor}
-                onClick={() => setNovaCor(cor)}
-                className="w-8 h-8 rounded-full"
-                style={{ background: cor, border: cor === novaCor ? '2px solid #e5e5e3' : '2px solid transparent' }}
-              />
-            ))}
-          </div>
-          <button onClick={criarPerfil} className="w-full rounded-lg py-3 text-sm font-medium" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
+          <ColorPicker value={novaCor} onChange={setNovaCor} />
+          <button onClick={criarPerfil} className="w-full rounded-lg py-3 text-sm font-medium mt-4" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
             Criar perfil
           </button>
         </Overlay>

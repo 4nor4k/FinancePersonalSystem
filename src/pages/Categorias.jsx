@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconChevronLeft, IconPlus, IconEdit, IconTrash } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
-import { CORES } from '../lib/colors'
+import { COR_PADRAO } from '../lib/colors'
+import ColorPicker from '../components/ColorPicker'
 
 const ICONES = ['ti-home', 'ti-car', 'ti-shopping-cart', 'ti-device-laptop', 'ti-tools', 'ti-heart', 'ti-plane', 'ti-school', 'ti-paw', 'ti-gift', 'ti-cash', 'ti-dots']
 
@@ -13,7 +14,7 @@ export default function Categorias() {
   const [criando, setCriando] = useState(false)
   const [nome, setNome] = useState('')
   const [icone, setIcone] = useState(ICONES[0])
-  const [cor, setCor] = useState(CORES[0])
+  const [cor, setCor] = useState(COR_PADRAO)
   const [editandoId, setEditandoId] = useState(null)
 
   const filtradas = categorias.filter((c) => c.tipo === tipo)
@@ -79,19 +80,10 @@ export default function Categorias() {
             ))}
           </div>
           <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
-          <div className="flex flex-wrap gap-2 mb-3.5">
-            {CORES.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCor(c)}
-                className="w-7 h-7 rounded-full"
-                style={{ background: c, border: c === cor ? '2px solid #e5e5e3' : '2px solid transparent' }}
-              />
-            ))}
-          </div>
+          <ColorPicker value={cor} onChange={setCor} />
           <button
             onClick={handleSalvar}
-            className="w-full rounded-lg py-2.5 text-sm font-medium"
+            className="w-full rounded-lg py-2.5 text-sm font-medium mt-4"
             style={{ background: '#e5e5e3', color: '#0a0a0a' }}
           >
             Salvar categoria
@@ -135,19 +127,10 @@ export default function Categorias() {
                   ))}
                 </div>
                 <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {CORES.map((cor) => (
-                    <button
-                      key={cor}
-                      onClick={() => updateCategoria(c.id, { cor })}
-                      className="w-6 h-6 rounded-full"
-                      style={{ background: cor, border: cor === c.cor ? '2px solid #e5e5e3' : '2px solid transparent' }}
-                    />
-                  ))}
-                </div>
+                <ColorPicker value={c.cor} onChange={(cor) => updateCategoria(c.id, { cor })} />
                 <button
                   onClick={() => handleExcluir(c.id)}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-medium"
+                  className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-medium mt-4"
                   style={{ background: '#1e1414', color: '#e2716f' }}
                 >
                   <IconTrash size={14} />

@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconChevronLeft, IconPlus, IconEdit } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
-import { formatBRL } from '../lib/format'
-import { CORES } from '../lib/colors'
+import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCurrencyDisplay } from '../lib/format'
+import { COR_PADRAO } from '../lib/colors'
+import ColorPicker from '../components/ColorPicker'
 
 const ICONES = ['ti-building-bank', 'ti-pig-money', 'ti-credit-card', 'ti-cash', 'ti-wallet', 'ti-coin']
 
@@ -12,7 +13,7 @@ export default function Contas() {
   const { contas, transacoes, addConta, updateConta } = useData()
   const [criando, setCriando] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
-  const [form, setForm] = useState({ nome: '', tipo: 'comum', limite: '', icone: ICONES[0], cor: CORES[0] })
+  const [form, setForm] = useState({ nome: '', tipo: 'comum', limite: '', icone: ICONES[0], cor: COR_PADRAO })
 
   function saldoConta(conta) {
     const soma = transacoes
@@ -32,11 +33,11 @@ export default function Contas() {
     await addConta({
       nome: form.nome,
       tipo: form.tipo,
-      limite: form.tipo === 'cartao_credito' ? Number(form.limite) || 0 : null,
+      limite: form.tipo === 'cartao_credito' ? currencyDisplayToNumber(form.limite) : null,
       icone: form.icone,
       cor: form.cor,
     })
-    setForm({ nome: '', tipo: 'comum', limite: '', icone: ICONES[0], cor: CORES[0] })
+    setForm({ nome: '', tipo: 'comum', limite: '', icone: ICONES[0], cor: COR_PADRAO })
     setCriando(false)
   }
 
@@ -75,14 +76,14 @@ export default function Contas() {
           {form.tipo === 'cartao_credito' && (
             <input
               value={form.limite}
-              onChange={(e) => setForm((f) => ({ ...f, limite: e.target.value.replace(/[^0-9]/g, '') }))}
-              placeholder="Limite (ex: 2000)"
+              onChange={(e) => setForm((f) => ({ ...f, limite: digitsToCurrencyDisplay(e.target.value) }))}
+              placeholder="Limite (ex: 2.000,00)"
               inputMode="numeric"
               className="w-full bg-bg-raised rounded-lg px-3 py-2.5 text-sm outline-none mb-3 placeholder:text-text-muted"
             />
           )}
           <p className="text-[11px] text-text-muted mb-1.5">Ícone</p>
-          <div className="grid grid-cols-6 gap-2 mb-3">
+          <div className="grid grid-cols-6 gap-2 mb-4">
             {ICONES.map((ic) => (
               <button
                 key={ic}
@@ -95,17 +96,8 @@ export default function Contas() {
             ))}
           </div>
           <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
-          <div className="flex flex-wrap gap-2 mb-3.5">
-            {CORES.map((c) => (
-              <button
-                key={c}
-                onClick={() => setForm((f) => ({ ...f, cor: c }))}
-                className="w-7 h-7 rounded-full"
-                style={{ background: c, border: c === form.cor ? '2px solid #e5e5e3' : '2px solid transparent' }}
-              />
-            ))}
-          </div>
-          <button onClick={handleCriar} className="w-full rounded-lg py-2.5 text-sm font-medium" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
+          <ColorPicker value={form.cor} onChange={(cor) => setForm((f) => ({ ...f, cor }))} />
+          <button onClick={handleCriar} className="w-full rounded-lg py-2.5 text-sm font-medium mt-4" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
             Salvar conta
           </button>
         </div>
@@ -113,62 +105,81 @@ export default function Contas() {
 
       <div className="flex flex-col gap-2">
         {contas.map((c) => (
-          <div key={c.id} className="bg-bg-card rounded-xl overflow-hidden">
-            <div className="p-3 flex items-center">
-              <div className="w-8.5 h-8.5 rounded-lg flex items-center justify-center mr-3" style={{ background: '#1a1a1a' }}>
-                <i className={`ti ${c.icone || 'ti-building-bank'}`} style={{ fontSize: 15, color: c.cor || '#8a8a87' }} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm">{c.nome}</p>
-                <p className="text-[11px] text-text-secondary mt-0.5">
-                  {c.tipo === 'cartao_credito' ? 'Cartão de crédito' : 'Comum'}
-                </p>
-              </div>
-              <span className="text-sm mr-2">{saldoConta(c)}</span>
-              <button onClick={() => setEditandoId(editandoId === c.id ? null : c.id)} className="text-text-muted">
-                <IconEdit size={15} />
-              </button>
-            </div>
-            {editandoId === c.id && (
-              <div className="px-3 pb-3">
-                <p className="text-[11px] text-text-muted mb-1.5">Nome</p>
-                <input
-                  value={c.nome}
-                  onChange={(e) => updateConta(c.id, { nome: e.target.value })}
-                  className="w-full bg-bg-raised rounded-lg px-3 py-2.5 text-sm outline-none mb-3"
-                />
-                <p className="text-[11px] text-text-muted mb-1.5">Ícone</p>
-                <div className="grid grid-cols-6 gap-2 mb-3">
-                  {ICONES.map((ic) => (
-                    <button
-                      key={ic}
-                      onClick={() => updateConta(c.id, { icone: ic })}
-                      className="aspect-square rounded-lg flex items-center justify-center"
-                      style={{ background: ic === c.icone ? '#232323' : '#1a1a1a' }}
-                    >
-                      <i className={`ti ${ic}`} style={{ fontSize: 15, color: ic === c.icone ? '#e5e5e3' : '#8a8a87' }} />
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
-                <div className="flex flex-wrap gap-2">
-                  {CORES.map((cor) => (
-                    <button
-                      key={cor}
-                      onClick={() => updateConta(c.id, { cor })}
-                      className="w-6 h-6 rounded-full"
-                      style={{ background: cor, border: cor === c.cor ? '2px solid #e5e5e3' : '2px solid transparent' }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <ContaItem key={c.id} conta={c} editando={editandoId === c.id} onToggleEditar={() => setEditandoId(editandoId === c.id ? null : c.id)} onUpdate={updateConta} saldoLabel={saldoConta(c)} />
         ))}
         {contas.length === 0 && (
           <p className="text-xs text-text-muted text-center py-6">Nenhuma conta ainda.</p>
         )}
       </div>
+    </div>
+  )
+}
+
+function ContaItem({ conta: c, editando, onToggleEditar, onUpdate, saldoLabel }) {
+  const [limiteEdit, setLimiteEdit] = useState(numberToCurrencyDisplay(c.limite))
+
+  function salvarLimite() {
+    onUpdate(c.id, { limite: currencyDisplayToNumber(limiteEdit) })
+  }
+
+  return (
+    <div className="bg-bg-card rounded-xl overflow-hidden">
+      <div className="p-3 flex items-center">
+        <div className="w-8.5 h-8.5 rounded-lg flex items-center justify-center mr-3" style={{ background: '#1a1a1a' }}>
+          <i className={`ti ${c.icone || 'ti-building-bank'}`} style={{ fontSize: 15, color: c.cor || '#8a8a87' }} />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm">{c.nome}</p>
+          <p className="text-[11px] text-text-secondary mt-0.5">
+            {c.tipo === 'cartao_credito' ? 'Cartão de crédito' : 'Comum'}
+          </p>
+        </div>
+        <span className="text-sm mr-2">{saldoLabel}</span>
+        <button onClick={onToggleEditar} className="text-text-muted">
+          <IconEdit size={15} />
+        </button>
+      </div>
+      {editando && (
+        <div className="px-3 pb-3">
+          <p className="text-[11px] text-text-muted mb-1.5">Nome</p>
+          <input
+            value={c.nome}
+            onChange={(e) => onUpdate(c.id, { nome: e.target.value })}
+            className="w-full bg-bg-raised rounded-lg px-3 py-2.5 text-sm outline-none mb-3"
+          />
+          {c.tipo === 'cartao_credito' && (
+            <>
+              <p className="text-[11px] text-text-muted mb-1.5">Limite</p>
+              <div className="flex gap-2 mb-3">
+                <input
+                  value={limiteEdit}
+                  onChange={(e) => setLimiteEdit(digitsToCurrencyDisplay(e.target.value))}
+                  inputMode="numeric"
+                  className="flex-1 bg-bg-raised rounded-lg px-3 py-2.5 text-sm outline-none"
+                />
+                <button onClick={salvarLimite} className="px-4 rounded-lg text-xs font-medium" style={{ background: 'var(--accent-bg)', color: 'var(--accent-color)' }}>
+                  Salvar
+                </button>
+              </div>
+            </>
+          )}
+          <p className="text-[11px] text-text-muted mb-1.5">Ícone</p>
+          <div className="grid grid-cols-6 gap-2 mb-3">
+            {ICONES.map((ic) => (
+              <button
+                key={ic}
+                onClick={() => onUpdate(c.id, { icone: ic })}
+                className="aspect-square rounded-lg flex items-center justify-center"
+                style={{ background: ic === c.icone ? '#232323' : '#1a1a1a' }}
+              >
+                <i className={`ti ${ic}`} style={{ fontSize: 15, color: ic === c.icone ? '#e5e5e3' : '#8a8a87' }} />
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
+          <ColorPicker value={c.cor} onChange={(cor) => onUpdate(c.id, { cor })} />
+        </div>
+      )}
     </div>
   )
 }

@@ -166,12 +166,12 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 gap-2.5 mb-4">
         <div className="bg-bg-card rounded-2xl p-4">
-          <p className="text-xs text-text-secondary mb-2">Despesas</p>
-          <p className="text-xl font-medium">{mask(formatBRL(despesasMes))}</p>
-        </div>
-        <div className="bg-bg-card rounded-2xl p-4">
           <p className="text-xs text-text-secondary mb-2">Receitas</p>
           <p className="text-xl font-medium" style={{ color: '#7fd88f' }}>{mask(formatBRL(receitasMes))}</p>
+        </div>
+        <div className="bg-bg-card rounded-2xl p-4">
+          <p className="text-xs text-text-secondary mb-2">Despesas</p>
+          <p className="text-xl font-medium">{mask(formatBRL(despesasMes))}</p>
         </div>
       </div>
 
@@ -357,10 +357,10 @@ function ChartsCarousel({ despesasPorCategoria, totalCategorias, balancoPorMes, 
             <p className="text-sm text-text-secondary">Balanço de {anoAtual}</p>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-                <span className="w-2 h-2 rounded-full" style={{ background: '#e2716f' }} /> despesas
+                <span className="w-2 h-2 rounded-full" style={{ background: '#7fd88f' }} /> receitas
               </span>
               <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-                <span className="w-2 h-2 rounded-full" style={{ background: '#7fd88f' }} /> receitas
+                <span className="w-2 h-2 rounded-full" style={{ background: '#e2716f' }} /> despesas
               </span>
             </div>
           </div>
@@ -374,8 +374,8 @@ function ChartsCarousel({ despesasPorCategoria, totalCategorias, balancoPorMes, 
                     <div
                       className="flex-1 max-w-[10px]"
                       style={{
-                        height: `${Math.max((despesa / maiorValorMes) * 100, despesa > 0 ? 4 : 0)}%`,
-                        background: '#e2716f',
+                        height: `${Math.max((receita / maiorValorMes) * 100, receita > 0 ? 4 : 0)}%`,
+                        background: '#7fd88f',
                         borderRadius: '4px 4px 1px 1px',
                         opacity: idx === mesAtualIdx ? 1 : 0.75,
                       }}
@@ -383,8 +383,8 @@ function ChartsCarousel({ despesasPorCategoria, totalCategorias, balancoPorMes, 
                     <div
                       className="flex-1 max-w-[10px]"
                       style={{
-                        height: `${Math.max((receita / maiorValorMes) * 100, receita > 0 ? 4 : 0)}%`,
-                        background: '#7fd88f',
+                        height: `${Math.max((despesa / maiorValorMes) * 100, despesa > 0 ? 4 : 0)}%`,
+                        background: '#e2716f',
                         borderRadius: '4px 4px 1px 1px',
                         opacity: idx === mesAtualIdx ? 1 : 0.75,
                       }}

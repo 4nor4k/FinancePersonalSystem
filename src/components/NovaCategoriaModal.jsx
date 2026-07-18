@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Overlay from './Overlay'
-import { CORES } from '../lib/colors'
+import ColorPicker from './ColorPicker'
+import { COR_PADRAO } from '../lib/colors'
 
 const ICONES = ['ti-home', 'ti-car', 'ti-shopping-cart', 'ti-device-laptop', 'ti-tools', 'ti-heart', 'ti-plane', 'ti-school', 'ti-paw', 'ti-gift', 'ti-cash', 'ti-dots']
 
@@ -8,7 +9,7 @@ export default function NovaCategoriaModal({ tipoInicial = 'despesa', onClose, o
   const [nome, setNome] = useState('')
   const [tipo, setTipo] = useState(tipoInicial)
   const [icone, setIcone] = useState(ICONES[0])
-  const [cor, setCor] = useState(CORES[0])
+  const [cor, setCor] = useState(COR_PADRAO)
 
   async function handleCriar() {
     if (!nome.trim()) return
@@ -39,7 +40,7 @@ export default function NovaCategoriaModal({ tipoInicial = 'despesa', onClose, o
         ))}
       </div>
       <p className="text-[11px] text-text-muted mb-1.5">Ícone</p>
-      <div className="grid grid-cols-6 gap-2 mb-3">
+      <div className="grid grid-cols-6 gap-2 mb-4">
         {ICONES.map((ic) => (
           <button
             key={ic}
@@ -52,17 +53,8 @@ export default function NovaCategoriaModal({ tipoInicial = 'despesa', onClose, o
         ))}
       </div>
       <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
-      <div className="flex flex-wrap gap-2 mb-5">
-        {CORES.map((c) => (
-          <button
-            key={c}
-            onClick={() => setCor(c)}
-            className="w-7 h-7 rounded-full"
-            style={{ background: c, border: c === cor ? '2px solid #e5e5e3' : '2px solid transparent' }}
-          />
-        ))}
-      </div>
-      <button onClick={handleCriar} className="w-full rounded-lg py-3 text-sm font-medium" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
+      <ColorPicker value={cor} onChange={setCor} />
+      <button onClick={handleCriar} className="w-full rounded-lg py-3 text-sm font-medium mt-4" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
         Criar categoria
       </button>
     </Overlay>

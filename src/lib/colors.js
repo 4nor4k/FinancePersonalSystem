@@ -1,20 +1,31 @@
-// Paleta compartilhada usada em qualquer seletor de cor do app
-// (perfil, conta, categoria) -- mantém consistência entre as telas.
-export const CORES = [
-  '#ff8a3d', // laranja
-  '#d9b56a', // dourado
-  '#7fd88f', // verde
-  '#6ab8d9', // azul claro
-  '#a892e0', // roxo
-  '#8a8a87', // cinza médio
-  '#f5f5f3', // branco
-  '#5c5c59', // cinza escuro
-  '#e2716f', // vermelho
-  '#2f5fff', // azul neon escuro
-  '#ff4fd8', // rosa neon
-  '#4fe3ff', // ciano neon
-  '#c8ff4f', // lima neon
-  '#ff4f6a', // coral neon
-  '#7c4fff', // violeta neon
-  '#4fffb0', // menta neon
-]
+// Paleta de cores do usuário -- começa vazia. Cada cor que você escolhe (com
+// a opção "adicionar à paleta" marcada) fica salva aqui pra reaproveitar
+// rapidamente da próxima vez, em qualquer seletor de cor do app (perfil,
+// conta, categoria, objetivo). Fica salvo no navegador (local).
+
+const PALETA_KEY = 'financeiro:paleta-cores'
+
+export function getPaleta() {
+  try {
+    const salvo = JSON.parse(localStorage.getItem(PALETA_KEY))
+    return Array.isArray(salvo) ? salvo : []
+  } catch {
+    return []
+  }
+}
+
+export function addCorPaleta(cor) {
+  const paleta = getPaleta()
+  if (paleta.includes(cor)) return
+  paleta.push(cor)
+  localStorage.setItem(PALETA_KEY, JSON.stringify(paleta))
+}
+
+export function removeCorPaleta(cor) {
+  const paleta = getPaleta().filter((c) => c !== cor)
+  localStorage.setItem(PALETA_KEY, JSON.stringify(paleta))
+}
+
+// Mantido só pra dar um valor inicial neutro a formulários que precisam de
+// uma cor padrão antes do usuário escolher a dele.
+export const COR_PADRAO = '#f5f5f3'

@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconChevronLeft, IconPlus, IconEdit, IconTrash, IconX } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
-import { formatBRL } from '../lib/format'
-import { CORES } from '../lib/colors'
+import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCurrencyDisplay } from '../lib/format'
+import { COR_PADRAO } from '../lib/colors'
+import ColorPicker from '../components/ColorPicker'
 import Overlay from '../components/Overlay'
 
 const ICONES = ['ti-shield', 'ti-car', 'ti-home', 'ti-trending-up', 'ti-briefcase', 'ti-plane', 'ti-heart', 'ti-gift', 'ti-school', 'ti-pig-money', 'ti-target', 'ti-dots']
@@ -124,14 +125,14 @@ export default function Objetivos() {
 
 function ObjetivoForm({ objetivo, onClose, onSave, onDelete }) {
   const [nome, setNome] = useState(objetivo?.nome || '')
-  const [valorMeta, setValorMeta] = useState(objetivo?.valor_meta ? String(objetivo.valor_meta) : '')
+  const [valorMeta, setValorMeta] = useState(objetivo?.valor_meta ? numberToCurrencyDisplay(objetivo.valor_meta) : '')
   const [icone, setIcone] = useState(objetivo?.icone || ICONES[0])
-  const [cor, setCor] = useState(objetivo?.cor || CORES[0])
+  const [cor, setCor] = useState(objetivo?.cor || COR_PADRAO)
   const [metaData, setMetaData] = useState(objetivo?.meta_data || '')
 
   async function handleSalvar() {
     if (!nome.trim() || !valorMeta) return
-    await onSave({ nome, valorMeta: Number(valorMeta), icone, cor, metaData })
+    await onSave({ nome, valorMeta: currencyDisplayToNumber(valorMeta), icone, cor, metaData })
     onClose()
   }
 
@@ -150,8 +151,8 @@ function ObjetivoForm({ objetivo, onClose, onSave, onDelete }) {
       <p className="text-[11px] text-text-muted mb-1.5">Valor da meta</p>
       <input
         value={valorMeta}
-        onChange={(e) => setValorMeta(e.target.value.replace(/[^0-9.]/g, ''))}
-        placeholder="15000"
+        onChange={(e) => setValorMeta(digitsToCurrencyDisplay(e.target.value))}
+        placeholder="0,00"
         inputMode="numeric"
         className="w-full bg-bg-raised rounded-lg px-3 py-3 text-sm outline-none mb-3 placeholder:text-text-muted"
       />
@@ -171,18 +172,9 @@ function ObjetivoForm({ objetivo, onClose, onSave, onDelete }) {
       </div>
 
       <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
-      <div className="flex flex-wrap gap-2 mb-3.5">
-        {CORES.map((c) => (
-          <button
-            key={c}
-            onClick={() => setCor(c)}
-            className="w-7 h-7 rounded-full"
-            style={{ background: c, border: c === cor ? '2px solid #e5e5e3' : '2px solid transparent' }}
-          />
-        ))}
-      </div>
+      <ColorPicker value={cor} onChange={setCor} />
 
-      <p className="text-[11px] text-text-muted mb-1.5">Meta de data (opcional)</p>
+      <p className="text-[11px] text-text-muted mb-1.5 mt-4">Meta de data (opcional)</p>
       <input
         type="date"
         value={metaData}
@@ -211,7 +203,7 @@ function AportarModal({ objetivo, contas, categorias, onClose, onAportar }) {
   const [categoriaId, setCategoriaId] = useState('')
 
   async function handleConfirmar() {
-    const v = Number(valor.replace(',', '.'))
+    const v = currencyDisplayToNumber(valor)
     if (!v) return
     const payload = registrarTransacao && contaId ? { conta_id: contaId, categoria_id: categoriaId || null } : null
     await onAportar(objetivo, v, payload)
@@ -228,9 +220,9 @@ function AportarModal({ objetivo, contas, categorias, onClose, onAportar }) {
       <p className="text-[11px] text-text-muted mb-1.5">Valor do aporte</p>
       <input
         value={valor}
-        onChange={(e) => setValor(e.target.value.replace(/[^0-9,]/g, ''))}
+        onChange={(e) => setValor(digitsToCurrencyDisplay(e.target.value))}
         placeholder="0,00"
-        inputMode="decimal"
+        inputMode="numeric"
         className="w-full bg-bg-raised rounded-lg px-3 py-3 text-sm outline-none mb-4"
       />
 

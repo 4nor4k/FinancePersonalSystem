@@ -1,20 +1,22 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { IconX, IconPlus, IconChevronDown } from '@tabler/icons-react'
+import { IconX, IconPlus, IconChevronDown, IconTrash, IconRepeat } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
+import { digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCurrencyDisplay } from '../lib/format'
 import NovaContaModal from '../components/NovaContaModal'
 import NovaCategoriaModal from '../components/NovaCategoriaModal'
+import Overlay from '../components/Overlay'
 
 export default function NovaTransacao() {
   const navigate = useNavigate()
   const location = useLocation()
   const editId = location.state?.editId
-  const { contas, categorias, transacoes, addConta, addCategoria, addTransacao, updateTransacao } = useData()
+  const { contas, categorias, transacoes, addConta, addCategoria, addTransacao, updateTransacao, excluirTransacao } = useData()
 
   const transacaoEditando = editId ? transacoes.find((t) => t.id === editId) : null
 
   const [tipo, setTipo] = useState(transacaoEditando?.tipo || 'despesa')
-  const [valor, setValor] = useState(transacaoEditando ? String(transacaoEditando.valor).replace('.', ',') : '')
+  const [valor, setValor] = useState(transacaoEditando ? numberToCurrencyDisplay(transacaoEditando.valor) : '')
   const [contaId, setContaId] = useState(transacaoEditando?.conta_id || '')
   const [categoriaId, setCategoriaId] = useState(transacaoEditando?.categoria_id || '')
   const [data, setData] = useState(transacaoEditando?.data || new Date().toISOString().slice(0, 10))
@@ -25,8 +27,22 @@ export default function NovaTransacao() {
   const [salvando, setSalvando] = useState(false)
   const [modalConta, setModalConta] = useState(false)
   const [modalCategoria, setModalCategoria] = useState(false)
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
 
   const categoriasFiltradas = categorias.filter((c) => c.tipo === tipo)
+
+  async function handleExcluir(modo = 'este') {
+    await excluirTransacao(transacaoEditando.id, modo)
+    navigate('/transacoes')
+  }
+
+  function handleClickExcluir() {
+    if (transacaoEditando.recorrencia_id) {
+      setConfirmandoExclusao(true)
+    } else {
+      handleExcluir('este')
+    }
+  }
 
   async function handleConfirm() {
     if (!valor || !contaId) return
@@ -35,7 +51,7 @@ export default function NovaTransacao() {
     if (transacaoEditando) {
       await updateTransacao(transacaoEditando.id, {
         tipo,
-        valor: Number(valor.replace(',', '.')),
+        valor: currencyDisplayToNumber(valor),
         conta_id: contaId,
         categoria_id: categoriaId || null,
         data,
@@ -44,7 +60,7 @@ export default function NovaTransacao() {
     } else {
       await addTransacao({
         tipo,
-        valor: Number(valor.replace(',', '.')),
+        valor: currencyDisplayToNumber(valor),
         conta_id: contaId,
         categoria_id: categoriaId || null,
         data,
@@ -63,7 +79,13 @@ export default function NovaTransacao() {
           <IconX size={18} />
         </button>
         <span className="text-sm font-medium">{transacaoEditando ? 'Editar transação' : 'Nova transação'}</span>
-        <div className="w-[18px]" />
+        {transacaoEditando ? (
+          <button onClick={handleClickExcluir} className="text-text-secondary">
+            <IconTrash size={18} />
+          </button>
+        ) : (
+          <div className="w-[18px]" />
+        )}
       </div>
 
       <div className="flex gap-1.5 bg-bg-raised rounded-full p-1 mb-4">
@@ -94,9 +116,9 @@ export default function NovaTransacao() {
         <p className="text-[11px] text-text-muted mb-1.5">Valor</p>
         <input
           value={valor}
-          onChange={(e) => setValor(e.target.value.replace(/[^0-9,]/g, ''))}
+          onChange={(e) => setValor(digitsToCurrencyDisplay(e.target.value))}
           placeholder="0,00"
-          inputMode="decimal"
+          inputMode="numeric"
           className="bg-transparent text-center text-4xl font-medium w-full outline-none placeholder:text-text-muted"
         />
       </div>
@@ -217,6 +239,39 @@ export default function NovaTransacao() {
           addCategoria={addCategoria}
           onCreated={(nova) => nova && setCategoriaId(nova.id)}
         />
+      )}
+
+      {confirmandoExclusao && (
+        <Overlay onClose={() => setConfirmandoExclusao(false)}>
+          <div className="flex justify-center mb-3.5">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-bg)' }}>
+              <IconRepeat size={20} style={{ color: 'var(--accent-color)' }} />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-center mb-1.5">Essa transação se repete</p>
+          <p className="text-xs text-text-secondary text-center mb-5">O que você quer excluir?</p>
+
+          <button
+            onClick={() => handleExcluir('este')}
+            className="w-full bg-bg-raised rounded-xl p-3.5 mb-2 text-left"
+          >
+            <p className="text-sm">Somente este mês</p>
+            <p className="text-[11px] text-text-muted mt-0.5">Os outros meses continuam como estavam</p>
+          </button>
+
+          <button
+            onClick={() => handleExcluir('proximos')}
+            className="w-full rounded-xl p-3.5 mb-4 text-left"
+            style={{ background: 'var(--accent-bg)' }}
+          >
+            <p className="text-sm font-medium" style={{ color: 'var(--accent-color)' }}>Este e os próximos meses</p>
+            <p className="text-[11px] mt-0.5" style={{ color: 'var(--accent-color)', opacity: 0.75 }}>Remove todas as ocorrências futuras</p>
+          </button>
+
+          <button onClick={() => setConfirmandoExclusao(false)} className="w-full text-xs text-text-secondary py-1">
+            Cancelar
+          </button>
+        </Overlay>
       )}
     </div>
   )
