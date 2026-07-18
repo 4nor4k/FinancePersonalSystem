@@ -228,11 +228,11 @@ export default function Dashboard() {
               Ver todos <IconChevronRight size={13} />
             </Link>
           </div>
-          <div className="flex gap-2.5 mb-6 overflow-x-auto -mx-4 px-4">
+          <div className={objetivos.slice(0, 3).length === 1 ? 'grid grid-cols-1 gap-2.5 mb-6' : 'grid grid-cols-2 gap-2.5 mb-6'}>
             {objetivos.slice(0, 3).map((o) => {
               const pct = Math.min(100, Math.round(((o.valor_atual || 0) / o.valor_meta) * 100))
               return (
-                <Link to="/objetivos" key={o.id} className="min-w-[150px] bg-bg-card rounded-2xl p-3">
+                <Link to="/objetivos" key={o.id} className="bg-bg-card rounded-2xl p-3">
                   <div className="flex items-center gap-2 mb-2.5">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#1a1a1a' }}>
                       <i className={`ti ${o.icone}`} style={{ fontSize: 14, color: o.cor }} />

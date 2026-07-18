@@ -6,27 +6,36 @@ const BRAPI_TOKEN = import.meta.env.VITE_BRAPI_TOKEN
 
 export async function fetchStockQuotes(tickers) {
   if (!tickers || tickers.length === 0) return { data: {}, erro: null }
-  try {
-    const url = `https://brapi.dev/api/quote/${tickers.join(',')}${BRAPI_TOKEN ? `?token=${BRAPI_TOKEN}` : ''}`
-    const res = await fetch(url)
-    const data = await res.json()
-    if (!res.ok) {
-      const msg = data?.message || data?.error || `Erro ${res.status} ao buscar cotações`
-      console.error('Erro da brapi:', msg, data)
-      return { data: {}, erro: msg }
-    }
-    const map = {}
-    ;(data.results || []).forEach((r) => {
-      map[r.symbol] = {
-        preco: r.regularMarketPrice,
-        variacaoPct: r.regularMarketChangePercent,
+
+  const resultados = await Promise.all(
+    tickers.map(async (ticker) => {
+      try {
+        const url = `https://brapi.dev/api/quote/${ticker}${BRAPI_TOKEN ? `?token=${BRAPI_TOKEN}` : ''}`
+        const res = await fetch(url)
+        const data = await res.json()
+        if (!res.ok) {
+          const msg = data?.message || data?.error || `Erro ${res.status}`
+          console.error(`Erro da brapi (${ticker}):`, msg, data)
+          return { ticker, erro: msg }
+        }
+        const r = (data.results || [])[0]
+        if (!r) return { ticker, erro: 'Ticker não encontrado' }
+        return { ticker, preco: r.regularMarketPrice, variacaoPct: r.regularMarketChangePercent }
+      } catch (e) {
+        console.error(`Erro ao buscar ${ticker}:`, e)
+        return { ticker, erro: e.message || 'Falha de conexão' }
       }
     })
-    return { data: map, erro: null }
-  } catch (e) {
-    console.error('Erro ao buscar cotações da brapi:', e)
-    return { data: {}, erro: e.message || 'Falha de conexão' }
-  }
+  )
+
+  const map = {}
+  const falhas = []
+  resultados.forEach((r) => {
+    if (r.erro) falhas.push(`${r.ticker}: ${r.erro}`)
+    else map[r.ticker] = { preco: r.preco, variacaoPct: r.variacaoPct }
+  })
+
+  return { data: map, erro: falhas.length > 0 ? falhas.join(' · ') : null }
 }
 
 export async function fetchCambioOuro() {
