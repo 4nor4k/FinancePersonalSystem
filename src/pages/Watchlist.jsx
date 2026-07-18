@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconPlus, IconX } from '@tabler/icons-react'
+import { IconChevronLeft, IconPlus, IconX, IconChartCandle } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL } from '../lib/format'
 import TrendTriangle from '../components/TrendTriangle'
@@ -34,8 +34,6 @@ export default function Watchlist() {
         </button>
       </div>
 
-      <p className="text-[11px] text-text-muted mb-3">Toque no "x" pra parar de acompanhar um ativo</p>
-
       {cotacoesErro && (
         <div className="bg-[#1e1414] rounded-xl p-3 mb-3">
           <p className="text-xs" style={{ color: '#e2716f' }}>Não foi possível buscar as cotações</p>
@@ -43,38 +41,33 @@ export default function Watchlist() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={watchlistAtivos.length === 1 ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-2 gap-3'}>
         {watchlistAtivos.map((ativo) => {
           const cot = cotacoes[ativo.ticker]
           const alta = cot && cot.variacaoPct >= 0
-          const corFundo = alta ? '#17301f' : '#301717'
           const corTexto = alta ? '#7fd88f' : '#e2716f'
           return (
-            <div key={ativo.id} className="rounded-2xl overflow-hidden" style={{ background: 'var(--card-tone-2)' }}>
-              <div className="p-3.5 relative">
-                <button
-                  onClick={() => removeAtivoWatchlist(ativo.id)}
-                  className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-black/40 flex items-center justify-center"
-                >
-                  <IconX size={11} color="#e5e5e3" />
-                </button>
-                <p className="text-[11px] text-text-secondary mb-1.5 pr-5">{ativo.ticker}</p>
-                {cot ? (
-                  <p className="text-lg font-medium">{formatBRL(cot.preco)}</p>
-                ) : (
-                  <p className="text-xs text-text-muted">{cotacoesErro ? 'indisponível' : 'carregando...'}</p>
-                )}
-              </div>
+            <div key={ativo.id} className="relative rounded-2xl p-4" style={{ background: 'var(--card-tone-2)' }}>
+              <button
+                onClick={() => removeAtivoWatchlist(ativo.id)}
+                className="absolute top-2.5 left-2.5 w-5 h-5 rounded-full bg-black/40 flex items-center justify-center"
+              >
+                <IconX size={11} color="#e5e5e3" />
+              </button>
               {cot && (
-                <div className="px-3.5 py-2.5 flex items-center justify-between" style={{ background: corFundo }}>
-                  <span className="text-xs font-medium flex items-center gap-1" style={{ color: corTexto }}>
-                    <TrendTriangle up={alta} size={6} />
-                    {Math.abs(cot.variacaoPct || 0).toFixed(2)}%
-                  </span>
-                  <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,0.25)', color: corTexto }}>
-                    {alta ? 'alta' : 'baixa'}
-                  </span>
-                </div>
+                <span className="absolute top-3 right-3 text-[11px] font-medium flex items-center gap-1" style={{ color: corTexto }}>
+                  <TrendTriangle up={alta} size={6} />
+                  {Math.abs(cot.variacaoPct || 0).toFixed(2)}%
+                </span>
+              )}
+              <p className="text-xs text-text-secondary text-center mt-4 mb-2">{ativo.ticker}</p>
+              <div className="flex justify-center my-2">
+                <IconChartCandle size={38} stroke={1.5} className="text-text-muted" />
+              </div>
+              {cot ? (
+                <p className="text-base font-medium text-center">{formatBRL(cot.preco)}</p>
+              ) : (
+                <p className="text-xs text-text-muted text-center">{cotacoesErro ? 'indisponível' : 'carregando...'}</p>
               )}
             </div>
           )

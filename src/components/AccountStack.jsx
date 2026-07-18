@@ -39,30 +39,19 @@ export default function AccountStack({ contas, mask }) {
       {contas.length > 1 && (
         <p className="text-[11px] text-text-muted mb-2.5">Toque no card pra ver a próxima conta</p>
       )}
-      <div className="mb-2" style={{ height: 104 }} onClick={handleClick}>
+      <div className="mb-4" style={{ height: 104 }} onClick={handleClick}>
         <div
           className="rounded-2xl p-4 cursor-pointer h-full"
-          style={{ background: 'var(--card-tone-2)', border: '0.5px solid #2a2620', ...style }}
+          style={{ background: 'var(--accent-color)', ...style }}
         >
           <div className="flex justify-between items-start">
-            <span className="text-[11px] font-medium text-text-secondary">{atual.nome}</span>
-            <IconWifi size={16} className="text-text-secondary" style={{ transform: 'rotate(90deg)' }} />
+            <span className="text-[11px] font-medium" style={{ color: '#1a0d05', opacity: 0.75 }}>{atual.nome}</span>
+            <IconWifi size={16} style={{ color: '#1a0d05', opacity: 0.75, transform: 'rotate(90deg)' }} />
           </div>
-          <p className="text-xl font-medium mt-5 text-text-primary">{mask(atual.valorExibido)}</p>
-          {atual.legenda && <p className="text-[10px] text-text-muted mt-0.5">{atual.legenda}</p>}
+          <p className="text-xl font-medium mt-5" style={{ color: '#1a0d05' }}>{mask(atual.valorExibido)}</p>
+          {atual.legenda && <p className="text-[10px] mt-0.5" style={{ color: '#1a0d05', opacity: 0.65 }}>{atual.legenda}</p>}
         </div>
       </div>
-      {contas.length > 1 && (
-        <div className="flex justify-center gap-1.5">
-          {contas.map((_, i) => (
-            <span
-              key={i}
-              className="rounded-full transition-all"
-              style={{ width: i === rot % contas.length ? 12 : 4, height: 4, background: i === rot % contas.length ? 'var(--accent-color)' : '#2a2a28' }}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }

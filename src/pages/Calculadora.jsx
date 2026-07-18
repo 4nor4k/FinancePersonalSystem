@@ -1,4 +1,4 @@
-import { IconTrash, IconBackspace } from '@tabler/icons-react'
+import { IconTrash, IconBackspace, IconX } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 
 const KEYS = [
@@ -9,7 +9,7 @@ const KEYS = [
   ['0', ',', '+', '='],
 ]
 
-const LABEL = { '*': 'X', '/': '÷', '-': '−' }
+const LABEL = { '/': '÷', '-': '−' }
 
 function safeEval(str) {
   if (!str) return '0'
@@ -71,7 +71,7 @@ export default function Calculadora() {
                   : { background: '#1a1a1a', color: '#e5e5e3' }
               }
             >
-              {k === 'back' ? <IconBackspace size={18} /> : LABEL[k] || k}
+              {k === 'back' ? <IconBackspace size={18} /> : k === '*' ? <IconX size={16} /> : LABEL[k] || k}
             </button>
           )
         })}

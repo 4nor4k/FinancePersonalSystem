@@ -50,7 +50,7 @@ export default function Wishlist() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={wishlist.length === 1 ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-2 gap-3'}>
         {wishlist.map((item) => {
           const vencido = item.meta_data && item.meta_data < hoje
           return (

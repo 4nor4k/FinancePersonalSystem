@@ -258,7 +258,7 @@ export default function Dashboard() {
               Ver todas <IconChevronRight size={13} />
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-2.5 mb-6">
+          <div className={watchlistAtivos.slice(0, 4).length === 1 ? 'grid grid-cols-1 gap-2.5 mb-6' : 'grid grid-cols-2 gap-2.5 mb-6'}>
             {watchlistAtivos.slice(0, 4).map((ativo) => {
               const cot = cotacoes[ativo.ticker]
               const alta = cot && cot.variacaoPct >= 0
@@ -291,19 +291,26 @@ export default function Dashboard() {
 
       {activeProfile?.nome !== 'Nebulus' && wishlist.length > 0 && (
         <>
-          <p className="text-sm text-text-secondary mb-2.5">Lista de desejos</p>
-          <div className="flex gap-2.5 mb-6">
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-sm text-text-secondary">Lista de desejos</p>
+            <Link to="/wishlist" className="text-xs text-text-secondary flex items-center gap-0.5">
+              Ver todas <IconChevronRight size={13} />
+            </Link>
+          </div>
+          <div className={wishlist.slice(0, 2).length === 1 ? 'grid grid-cols-1 gap-2.5 mb-6' : 'grid grid-cols-2 gap-2.5 mb-6'}>
             {wishlist.slice(0, 2).map((item) => (
-              <Link to="/wishlist" key={item.id} className="flex-1 bg-bg-card rounded-2xl p-2.5">
-                <div className="w-full h-16 bg-bg-raised rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+              <Link to="/wishlist" key={item.id} className="rounded-2xl overflow-hidden" style={{ background: 'var(--card-tone-2)' }}>
+                <div className="aspect-square bg-bg-raised flex items-center justify-center overflow-hidden">
                   {item.link_imagem ? (
                     <img src={item.link_imagem} alt={item.nome} className="w-full h-full object-cover" />
                   ) : (
-                    <IconPhoto size={20} className="text-text-muted" />
+                    <IconPhoto size={22} className="text-text-muted" />
                   )}
                 </div>
-                <p className="text-xs truncate">{item.nome}</p>
-                <p className="text-xs text-text-secondary mt-0.5">{mask(formatBRL(item.preco || 0))}</p>
+                <div className="p-2.5">
+                  <p className="text-xs font-medium truncate mb-1">{item.nome}</p>
+                  <p className="text-sm font-medium">{mask(formatBRL(item.preco || 0))}</p>
+                </div>
               </Link>
             ))}
           </div>
@@ -313,7 +320,7 @@ export default function Dashboard() {
       {notas.length > 0 && (
         <>
           <p className="text-sm text-text-secondary mb-2.5">Notas</p>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className={notas.slice(0, 2).length === 1 ? 'grid grid-cols-1 gap-2.5' : 'grid grid-cols-2 gap-2.5'}>
             {notas.slice(0, 2).map((n) => (
               <Link to="/notas" key={n.id} className="bg-bg-card rounded-2xl p-3">
                 <p className="text-sm font-medium mb-1 truncate">{n.titulo}</p>
