@@ -8,13 +8,14 @@ export default function CalculadoraJuros() {
   const [valorInicial, setValorInicial] = useState('1000')
   const [aporteMensal, setAporteMensal] = useState('200')
   const [taxa, setTaxa] = useState('1')
-  const [prazo, setPrazo] = useState('60')
+  const [prazo, setPrazo] = useState('5')
+  const [unidadePrazo, setUnidadePrazo] = useState('anos')
 
   const resultado = useMemo(() => {
     const pv = Number(valorInicial) || 0
     const pmt = Number(aporteMensal) || 0
     const i = (Number(taxa) || 0) / 100
-    const n = Number(prazo) || 0
+    const n = (Number(prazo) || 0) * (unidadePrazo === 'anos' ? 12 : 1)
 
     let montante = pv
     for (let mes = 0; mes < n; mes++) {
@@ -25,7 +26,7 @@ export default function CalculadoraJuros() {
     const jurosGanhos = montante - totalInvestido
 
     return { montante, totalInvestido, jurosGanhos: Math.max(0, jurosGanhos) }
-  }, [valorInicial, aporteMensal, taxa, prazo])
+  }, [valorInicial, aporteMensal, taxa, prazo, unidadePrazo])
 
   const pctJuros = resultado.montante > 0 ? Math.round((resultado.jurosGanhos / resultado.montante) * 100) : 0
 
@@ -68,7 +69,32 @@ export default function CalculadoraJuros() {
         <Campo label="Valor inicial" value={valorInicial} onChange={setValorInicial} prefixo="R$" />
         <Campo label="Aporte mensal" value={aporteMensal} onChange={setAporteMensal} prefixo="R$" />
         <Campo label="Taxa de juros (% ao mês)" value={taxa} onChange={setTaxa} sufixo="%" />
-        <Campo label="Prazo (meses)" value={prazo} onChange={setPrazo} sufixo="meses" />
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[11px] text-text-muted">Prazo</p>
+            <div className="flex gap-1 bg-bg-raised rounded-full p-0.5">
+              {['meses', 'anos'].map((u) => (
+                <button
+                  key={u}
+                  onClick={() => setUnidadePrazo(u)}
+                  className="text-[10px] px-2.5 py-1 rounded-full capitalize"
+                  style={u === unidadePrazo ? { background: '#333331', color: '#f0f0ee', fontWeight: 500 } : { color: '#8a8a87' }}
+                >
+                  {u}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="bg-bg-card rounded-xl px-3.5 py-3 flex items-center gap-2">
+            <input
+              value={prazo}
+              onChange={(e) => setPrazo(e.target.value.replace(/[^0-9.]/g, ''))}
+              inputMode="decimal"
+              className="flex-1 bg-transparent text-sm outline-none"
+            />
+            <span className="text-xs text-text-muted">{unidadePrazo}</span>
+          </div>
+        </div>
       </div>
 
       <p className="text-[10px] text-text-muted text-center mt-5 leading-relaxed">

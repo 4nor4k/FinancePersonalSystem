@@ -18,7 +18,7 @@ function dataNoMes(mesesAtras, dia) {
 }
 
 export const mockPerfis = [
-  { id: 'p-pessoal', nome: 'Pessoal', cor: '#ff8a3d', cor_bg: '#2e1c10' },
+  { id: 'p-pessoal', nome: 'Pessoal', cor: '#f5f5f3', cor_bg: '#2a2a28' },
   { id: 'p-empresa', nome: 'Nebulus', cor: '#4fce7a', cor_bg: '#17301f' },
 ]
 

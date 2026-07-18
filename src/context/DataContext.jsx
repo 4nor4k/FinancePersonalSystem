@@ -92,7 +92,7 @@ export function DataProvider({ children }) {
       if (perfisData.length === 0) {
         const { data: novo, error } = await supabase
           .from('perfis')
-          .insert({ usuario_id: user.id, nome: 'Pessoal', cor: '#ff8a3d', cor_bg: '#2e1c10' })
+          .insert({ usuario_id: user.id, nome: 'Pessoal', cor: '#f5f5f3', cor_bg: '#2a2a28' })
           .select()
           .single()
         reportError(error, 'criar perfil inicial')

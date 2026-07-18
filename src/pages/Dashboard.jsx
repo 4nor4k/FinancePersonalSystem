@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IconMenu2, IconEye, IconEyeOff, IconPhoto, IconChevronRight, IconChevronLeft } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
@@ -11,9 +11,7 @@ const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'se
 
 export default function Dashboard() {
   const {
-    perfis,
     activeProfile,
-    setActiveProfileId,
     contas,
     categorias,
     transacoes,
@@ -26,9 +24,6 @@ export default function Dashboard() {
 
   const mask = (value) => (valuesHidden ? '••••' : value)
   const [menuAberto, setMenuAberto] = useState(false)
-  const toggleTrackRef = useRef(null)
-  const toggleBtnRefs = useRef({})
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 })
   const [mesRef, setMesRef] = useState(new Date().toISOString().slice(0, 7))
 
   function mudarMes(delta) {
@@ -72,10 +67,11 @@ export default function Dashboard() {
     legenda: c.tipo === 'cartao_credito' ? 'disponível' : null,
   }))
 
+  // Categorias e valores do mês selecionado (não mais o histórico inteiro)
   const despesasPorCategoria = useMemo(() => {
     const map = {}
     transacoes
-      .filter((t) => t.tipo === 'despesa')
+      .filter((t) => t.tipo === 'despesa' && t.data.slice(0, 7) === mesRef)
       .forEach((t) => {
         map[t.categoria_id] = (map[t.categoria_id] || 0) + t.valor
       })
@@ -83,7 +79,7 @@ export default function Dashboard() {
       .map(([catId, valor]) => ({ categoria: categorias.find((c) => c.id === catId), valor }))
       .filter((x) => x.categoria)
       .sort((a, b) => b.valor - a.valor)
-  }, [transacoes, categorias])
+  }, [transacoes, categorias, mesRef])
 
   const totalCategorias = despesasPorCategoria.reduce((acc, x) => acc + x.valor, 0) || 1
 
@@ -109,16 +105,9 @@ export default function Dashboard() {
     .filter((t) => t.tipo === 'despesa' && t.data.slice(0, 7) === mesRef)
     .reduce((acc, t) => acc + t.valor, 0)
 
-  useEffect(() => {
-    if (!activeProfile) return
-    const btn = toggleBtnRefs.current[activeProfile.id]
-    const track = toggleTrackRef.current
-    if (btn && track) {
-      const trackRect = track.getBoundingClientRect()
-      const btnRect = btn.getBoundingClientRect()
-      setIndicator({ left: btnRect.left - trackRect.left, width: btnRect.width })
-    }
-  }, [activeProfile, perfis.length])
+  const receitasMes = transacoes
+    .filter((t) => t.tipo === 'receita' && t.data.slice(0, 7) === mesRef)
+    .reduce((acc, t) => acc + t.valor, 0)
 
   return (
     <div className="noise-bg max-w-md mx-auto px-4 pt-4 pb-56">
@@ -129,28 +118,16 @@ export default function Dashboard() {
             R$ 5,42 <TrendTriangle up size={7} />
           </span>
         </div>
-        <div className="flex justify-center">
-          <div ref={toggleTrackRef} className="relative flex items-center gap-2 bg-bg-card rounded-full p-1.5">
-            <div
-              className="absolute top-1.5 bottom-1.5 rounded-full transition-all duration-300 ease-out"
-              style={{
-                left: indicator.left,
-                width: indicator.width,
-                background: activeProfile?.cor_bg,
-              }}
-            />
-            {perfis.map((p) => (
-              <button
-                key={p.id}
-                ref={(el) => (toggleBtnRefs.current[p.id] = el)}
-                onClick={() => setActiveProfileId(p.id)}
-                className="relative z-10 text-sm px-4 py-2 rounded-full font-medium transition-colors duration-300"
-                style={{ color: activeProfile && p.id === activeProfile.id ? p.cor : '#8a8a87' }}
-              >
-                {p.nome}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-1 bg-bg-card rounded-full px-1 py-1">
+          <button onClick={() => mudarMes(-1)} className="text-text-secondary p-1.5">
+            <IconChevronLeft size={15} />
+          </button>
+          <span className="text-xs font-medium capitalize px-1 min-w-[92px] text-center">
+            {nomeMes} {anoLabel}
+          </span>
+          <button onClick={() => mudarMes(1)} className="text-text-secondary p-1.5">
+            <IconChevronRight size={15} />
+          </button>
         </div>
         <div className="flex justify-end">
           <button onClick={() => setMenuAberto(true)} className="text-text-secondary">
@@ -175,17 +152,15 @@ export default function Dashboard() {
 
       <AccountStack contas={contasParaStack} mask={mask} />
 
-      <div className="bg-bg-card rounded-2xl p-4 mb-4">
-        <div className="flex items-center justify-between mb-2.5">
-          <button onClick={() => mudarMes(-1)} className="text-text-secondary p-1 -ml-1">
-            <IconChevronLeft size={16} />
-          </button>
-          <span className="text-sm text-text-secondary capitalize">Despesas em {nomeMes}</span>
-          <button onClick={() => mudarMes(1)} className="text-text-secondary p-1 -mr-1">
-            <IconChevronRight size={16} />
-          </button>
+      <div className="grid grid-cols-2 gap-2.5 mb-4">
+        <div className="bg-bg-card rounded-2xl p-4">
+          <p className="text-xs text-text-secondary mb-2">Despesas</p>
+          <p className="text-xl font-medium">{mask(formatBRL(despesasMes))}</p>
         </div>
-        <p className="text-2xl font-medium text-text-primary text-center">{mask(formatBRL(despesasMes))}</p>
+        <div className="bg-bg-card rounded-2xl p-4">
+          <p className="text-xs text-text-secondary mb-2">Receitas</p>
+          <p className="text-xl font-medium" style={{ color: '#7fd88f' }}>{mask(formatBRL(receitasMes))}</p>
+        </div>
       </div>
 
       <ChartsCarousel
@@ -346,9 +321,9 @@ function ChartsCarousel({ despesasPorCategoria, totalCategorias, despesasPorMes,
         </div>
 
         <div className="min-w-full snap-center bg-bg-card rounded-2xl p-4">
-          <p className="text-sm text-text-secondary mb-4">Despesas por categoria</p>
+          <p className="text-sm text-text-secondary mb-4">Despesas por categoria no mês</p>
           {despesasPorCategoria.length === 0 ? (
-            <p className="text-sm text-text-muted">Sem despesas registradas ainda.</p>
+            <p className="text-sm text-text-muted">Sem despesas nesse mês.</p>
           ) : (
             <div className="flex items-center gap-4">
               <Donut fatias={despesasPorCategoria} total={totalCategorias} />
@@ -385,7 +360,7 @@ function Donut({ fatias, total }) {
   return (
     <svg width="88" height="88" viewBox="0 0 88 88" className="flex-shrink-0">
       <circle cx="44" cy="44" r={raio} fill="none" stroke="var(--card-tone-2)" strokeWidth="13" />
-      {fatias.slice(0, 5).map(({ categoria, valor }, i) => {
+      {fatias.slice(0, 5).map(({ categoria, valor }) => {
         const frac = valor / total
         const dash = frac * circ
         const offset = circ - acumulado
@@ -402,7 +377,6 @@ function Donut({ fatias, total }) {
             strokeDasharray={`${dash} ${circ - dash}`}
             strokeDashoffset={offset}
             transform="rotate(-90 44 44)"
-            style={i === 0 ? { filter: 'drop-shadow(0 0 6px color-mix(in srgb, ' + categoria.cor + ' 55%, transparent))' } : undefined}
           />
         )
       })}
