@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { IconMenu2, IconEye, IconEyeOff, IconPhoto, IconChevronRight } from '@tabler/icons-react'
+import { IconMenu2, IconEye, IconEyeOff, IconPhoto, IconChevronRight, IconChevronLeft } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL } from '../lib/format'
 import AccountStack from '../components/AccountStack'
@@ -19,6 +19,7 @@ export default function Dashboard() {
     transacoes,
     notas,
     wishlist,
+    objetivos,
     valuesHidden,
     setValuesHidden,
   } = useData()
@@ -28,9 +29,18 @@ export default function Dashboard() {
   const toggleTrackRef = useRef(null)
   const toggleBtnRefs = useRef({})
   const [indicator, setIndicator] = useState({ left: 0, width: 0 })
+  const [mesRef, setMesRef] = useState(new Date().toISOString().slice(0, 7))
 
-  const mesAtual = new Date().toISOString().slice(0, 7)
-  const anoAtual = new Date().getFullYear()
+  function mudarMes(delta) {
+    const [ano, mes] = mesRef.split('-').map(Number)
+    const d = new Date(ano, mes - 1 + delta, 1)
+    setMesRef(d.toISOString().slice(0, 7))
+  }
+
+  const anoAtual = Number(mesRef.slice(0, 4))
+  const [nomeMes, anoLabel] = new Date(mesRef + '-02')
+    .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    .split(' de ')
 
   const saldoPorConta = useMemo(() => {
     const map = {}
@@ -88,15 +98,15 @@ export default function Dashboard() {
     return valores
   }, [transacoes, anoAtual])
   const maiorMes = Math.max(...despesasPorMes, 1)
-  const mesAtualIdx = new Date().getMonth()
+  const mesAtualIdx = Number(mesRef.slice(5, 7)) - 1
 
   const proximasTransacoes = transacoes
-    .filter((t) => t.tipo === 'despesa' && t.status === 'pendente')
+    .filter((t) => t.tipo === 'despesa' && t.status === 'pendente' && t.data.slice(0, 7) === mesRef)
     .sort((a, b) => a.data.localeCompare(b.data))
     .slice(0, 3)
 
   const despesasMes = transacoes
-    .filter((t) => t.tipo === 'despesa' && t.data.slice(0, 7) === mesAtual)
+    .filter((t) => t.tipo === 'despesa' && t.data.slice(0, 7) === mesRef)
     .reduce((acc, t) => acc + t.valor, 0)
 
   useEffect(() => {
@@ -166,8 +176,16 @@ export default function Dashboard() {
       <AccountStack contas={contasParaStack} mask={mask} />
 
       <div className="bg-bg-card rounded-2xl p-4 mb-4">
-        <p className="text-sm text-text-secondary mb-2.5">Despesas do mês</p>
-        <p className="text-2xl font-medium text-text-primary">{mask(formatBRL(despesasMes))}</p>
+        <div className="flex items-center justify-between mb-2.5">
+          <button onClick={() => mudarMes(-1)} className="text-text-secondary p-1 -ml-1">
+            <IconChevronLeft size={16} />
+          </button>
+          <span className="text-sm text-text-secondary capitalize">Despesas em {nomeMes}</span>
+          <button onClick={() => mudarMes(1)} className="text-text-secondary p-1 -mr-1">
+            <IconChevronRight size={16} />
+          </button>
+        </div>
+        <p className="text-2xl font-medium text-text-primary text-center">{mask(formatBRL(despesasMes))}</p>
       </div>
 
       <ChartsCarousel
@@ -181,7 +199,9 @@ export default function Dashboard() {
       />
 
       <div className="flex items-center justify-between mb-2.5 mt-6">
-        <p className="text-sm text-text-secondary">Próximas transações</p>
+        <p className="text-sm text-text-secondary">
+          {mesRef === new Date().toISOString().slice(0, 7) ? 'Próximas transações' : 'Transações pendentes'}
+        </p>
         <Link to="/transacoes" className="text-xs text-text-secondary flex items-center gap-0.5">
           Ver todas <IconChevronRight size={13} />
         </Link>
@@ -212,6 +232,36 @@ export default function Dashboard() {
           )
         })}
       </div>
+
+      {objetivos.length > 0 && (
+        <>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-sm text-text-secondary">Objetivos</p>
+            <Link to="/objetivos" className="text-xs text-text-secondary flex items-center gap-0.5">
+              Ver todos <IconChevronRight size={13} />
+            </Link>
+          </div>
+          <div className="flex gap-2.5 mb-6 overflow-x-auto -mx-4 px-4">
+            {objetivos.slice(0, 3).map((o) => {
+              const pct = Math.min(100, Math.round(((o.valor_atual || 0) / o.valor_meta) * 100))
+              return (
+                <Link to="/objetivos" key={o.id} className="min-w-[150px] bg-bg-card rounded-2xl p-3">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#1a1a1a' }}>
+                      <i className={`ti ${o.icone}`} style={{ fontSize: 14, color: o.cor }} />
+                    </div>
+                    <p className="text-xs truncate">{o.nome}</p>
+                  </div>
+                  <div className="h-1.5 bg-bg-raised rounded-full overflow-hidden mb-1.5">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: o.cor }} />
+                  </div>
+                  <p className="text-[11px] text-text-secondary">{mask(formatBRL(o.valor_atual || 0))} <span style={{ color: o.cor }}>· {pct}%</span></p>
+                </Link>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       {activeProfile?.nome !== 'Nebulus' && wishlist.length > 0 && (
         <>
