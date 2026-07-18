@@ -10,6 +10,7 @@ import Categorias from './pages/Categorias'
 import Calculadora from './pages/Calculadora'
 import CalculadoraJuros from './pages/CalculadoraJuros'
 import Objetivos from './pages/Objetivos'
+import Watchlist from './pages/Watchlist'
 import Notas from './pages/Notas'
 import Wishlist from './pages/Wishlist'
 import Minigame from './pages/Minigame'
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/categorias" element={<Categorias />} />
         <Route path="/juros-compostos" element={<CalculadoraJuros />} />
         <Route path="/objetivos" element={<Objetivos />} />
+        <Route path="/cotacoes" element={<Watchlist />} />
         <Route path="/calculadora" element={<Calculadora />} />
         <Route path="/notas" element={<Notas />} />
         <Route path="/wishlist" element={<Wishlist />} />

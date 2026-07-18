@@ -9,6 +9,7 @@ import {
   IconArrowsExchange,
   IconCalculator,
   IconTarget,
+  IconChartLine,
   IconLogout,
   IconUser,
 } from '@tabler/icons-react'
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { label: 'Transações', icon: IconArrowsExchange, path: '/transacoes' },
   { label: 'Calculadora de juros compostos', icon: IconCalculator, path: '/juros-compostos' },
   { label: 'Objetivos', icon: IconTarget, path: '/objetivos' },
+  { label: 'Cotações', icon: IconChartLine, path: '/cotacoes' },
 ]
 
 export default function SideMenu({ onClose }) {

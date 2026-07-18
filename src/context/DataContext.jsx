@@ -10,7 +10,9 @@ import {
   mockNotas,
   mockWishlist,
   mockObjetivos,
+  mockWatchlist,
 } from '../lib/mockData'
+import { fetchStockQuotes, fetchCambioOuro } from '../lib/quotes'
 
 const DataContext = createContext(null)
 
@@ -36,6 +38,9 @@ export function DataProvider({ children }) {
   const [notas, setNotas] = useState([])
   const [wishlist, setWishlist] = useState([])
   const [objetivos, setObjetivos] = useState([])
+  const [watchlistAtivos, setWatchlistAtivos] = useState([])
+  const [cotacoes, setCotacoes] = useState({})
+  const [mercado, setMercado] = useState({ usd: null, ouro: null })
   const [activeProfileId, setActiveProfileId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [valuesHidden, setValuesHiddenState] = useState(
@@ -62,6 +67,7 @@ export function DataProvider({ children }) {
         setNotas(mockNotas)
         setWishlist(mockWishlist)
         setObjetivos(mockObjetivos)
+        setWatchlistAtivos(mockWatchlist)
         setActiveProfileId(mockPerfis[0].id)
         setLoading(false)
         return
@@ -72,7 +78,7 @@ export function DataProvider({ children }) {
         return
       }
 
-      const [p, c, cat, rec, t, n, w, o] = await Promise.all([
+      const [p, c, cat, rec, t, n, w, o, wl] = await Promise.all([
         supabase.from('perfis').select('*').order('criado_em'),
         supabase.from('contas').select('*'),
         supabase.from('categorias').select('*'),
@@ -81,10 +87,11 @@ export function DataProvider({ children }) {
         supabase.from('notas').select('*').order('atualizado_em', { ascending: false }),
         supabase.from('wishlist_itens').select('*'),
         supabase.from('objetivos').select('*'),
+        supabase.from('watchlist_ativos').select('*'),
       ])
 
       if (cancelled) return
-      ;[p, c, cat, rec, t, n, w, o].forEach((r) => reportError(r.error, 'carregar dados'))
+      ;[p, c, cat, rec, t, n, w, o, wl].forEach((r) => reportError(r.error, 'carregar dados'))
 
       let perfisData = p.data || []
 
@@ -107,6 +114,7 @@ export function DataProvider({ children }) {
       setNotas(n.data || [])
       setWishlist(w.data || [])
       setObjetivos(o.data || [])
+      setWatchlistAtivos(wl.data || [])
       setActiveProfileId(perfisData[0]?.id ?? null)
       setLoading(false)
     }
@@ -124,6 +132,25 @@ export function DataProvider({ children }) {
     document.documentElement.style.setProperty('--accent-color', activeProfile.cor)
     document.documentElement.style.setProperty('--accent-bg', activeProfile.cor_bg)
   }, [activeProfile])
+
+  // Dólar e ouro -- não dependem de perfil, busca uma vez só
+  useEffect(() => {
+    fetchCambioOuro().then(setMercado)
+  }, [])
+
+  // Cotações das ações/FIIs da watchlist do perfil ativo
+  const tickersDoPerfilAtivo = watchlistAtivos
+    .filter((w) => w.perfil_id === activeProfileId)
+    .map((w) => w.ticker)
+  const tickersKey = tickersDoPerfilAtivo.join(',')
+
+  useEffect(() => {
+    if (!tickersKey) {
+      setCotacoes({})
+      return
+    }
+    fetchStockQuotes(tickersKey.split(',')).then(setCotacoes)
+  }, [tickersKey])
 
   // ---------- Perfis ----------
   const addProfile = useCallback(
@@ -517,6 +544,39 @@ export function DataProvider({ children }) {
     [updateObjetivo, addTransacao]
   )
 
+  // ---------- Watchlist de cotações ----------
+  const addAtivoWatchlist = useCallback(
+    async (ticker) => {
+      const tickerLimpo = ticker.trim().toUpperCase()
+      if (!tickerLimpo) return null
+      if (isDemo) {
+        const novo = { id: 'wl-' + Date.now(), perfil_id: activeProfileId, ticker: tickerLimpo }
+        setWatchlistAtivos((prev) => [...prev, novo])
+        return novo
+      }
+      const { data, error } = await supabase
+        .from('watchlist_ativos')
+        .insert({ perfil_id: activeProfileId, ticker: tickerLimpo })
+        .select()
+        .single()
+      if (reportError(error, 'adicionar ativo')) return null
+      if (data) setWatchlistAtivos((prev) => [...prev, data])
+      return data
+    },
+    [isDemo, activeProfileId]
+  )
+
+  const removeAtivoWatchlist = useCallback(
+    async (id) => {
+      setWatchlistAtivos((prev) => prev.filter((w) => w.id !== id))
+      if (!isDemo) {
+        const { error } = await supabase.from('watchlist_ativos').delete().eq('id', id)
+        reportError(error, 'remover ativo')
+      }
+    },
+    [isDemo]
+  )
+
   const value = {
     loading,
     valuesHidden,
@@ -555,6 +615,11 @@ export function DataProvider({ children }) {
     updateObjetivo,
     deleteObjetivo,
     aportarObjetivo,
+    watchlistAtivos: watchlistAtivos.filter((w) => w.perfil_id === activeProfileId),
+    cotacoes,
+    mercado,
+    addAtivoWatchlist,
+    removeAtivoWatchlist,
   }
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

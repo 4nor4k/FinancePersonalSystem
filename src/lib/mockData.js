@@ -98,3 +98,9 @@ export const mockObjetivos = [
   { id: 'o2', perfil_id: 'p-pessoal', nome: 'Carro novo', valor_meta: 40000, valor_atual: 9500, icone: 'ti-car', cor: '#6ab8d9', meta_data: dataNoMes(-14, 1) },
   { id: 'o3', perfil_id: 'p-empresa', nome: 'Capital de giro', valor_meta: 20000, valor_atual: 20000, icone: 'ti-briefcase', cor: '#4fce7a', meta_data: null },
 ]
+
+export const mockWatchlist = [
+  { id: 'wl1', perfil_id: 'p-pessoal', ticker: 'PETR4' },
+  { id: 'wl2', perfil_id: 'p-pessoal', ticker: 'HGLG11' },
+  { id: 'wl3', perfil_id: 'p-pessoal', ticker: 'VALE3' },
+]

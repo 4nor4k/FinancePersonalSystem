@@ -17,6 +17,9 @@ export default function Dashboard() {
     transacoes,
     notas,
     wishlist,
+    watchlistAtivos,
+    cotacoes,
+    mercado,
     objetivos,
     valuesHidden,
     setValuesHidden,
@@ -119,9 +122,13 @@ export default function Dashboard() {
       <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-5 pt-1">
         <div className="flex flex-col">
           <span className="text-[11px] text-text-muted">USD</span>
-          <span className="text-sm font-medium text-green-400 flex items-center gap-1.5">
-            R$ 5,42 <TrendTriangle up size={7} />
-          </span>
+          {mercado.usd ? (
+            <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: mercado.usd.variacaoPct >= 0 ? '#7fd88f' : '#e2716f' }}>
+              {formatBRL(mercado.usd.preco)} <TrendTriangle up={mercado.usd.variacaoPct >= 0} size={7} />
+            </span>
+          ) : (
+            <span className="text-sm font-medium text-text-muted">...</span>
+          )}
         </div>
         <div className="flex items-center gap-1 bg-bg-card rounded-full px-1 py-1">
           <button onClick={() => mudarMes(-1)} className="text-text-secondary p-1.5">
@@ -236,6 +243,39 @@ export default function Dashboard() {
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, background: o.cor }} />
                   </div>
                   <p className="text-[11px] text-text-secondary">{mask(formatBRL(o.valor_atual || 0))} <span style={{ color: o.cor }}>· {pct}%</span></p>
+                </Link>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {activeProfile?.nome !== 'Nebulus' && watchlistAtivos.length > 0 && (
+        <>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-sm text-text-secondary">Cotações</p>
+            <Link to="/cotacoes" className="text-xs text-text-secondary flex items-center gap-0.5">
+              Ver todas <IconChevronRight size={13} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5 mb-6">
+            {watchlistAtivos.slice(0, 4).map((ativo) => {
+              const cot = cotacoes[ativo.ticker]
+              const alta = cot && cot.variacaoPct >= 0
+              return (
+                <Link to="/cotacoes" key={ativo.id} className="bg-bg-card rounded-2xl p-3">
+                  <p className="text-xs font-medium mb-1">{ativo.ticker}</p>
+                  {cot ? (
+                    <>
+                      <p className="text-sm">{formatBRL(cot.preco)}</p>
+                      <p className="text-[11px] flex items-center gap-1 mt-0.5" style={{ color: alta ? '#7fd88f' : '#e2716f' }}>
+                        <TrendTriangle up={alta} size={6} />
+                        {Math.abs(cot.variacaoPct || 0).toFixed(2)}%
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-text-muted">carregando...</p>
+                  )}
                 </Link>
               )
             })}
