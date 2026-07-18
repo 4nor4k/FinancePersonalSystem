@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { IconTrash } from '@tabler/icons-react'
 import { getPaleta, addCorPaleta, removeCorPaleta } from '../lib/colors'
+import ColorWheel from './ColorWheel'
 
 export default function ColorPicker({ value, onChange }) {
   const [paleta, setPaleta] = useState(getPaleta())
   const [adicionarPaleta, setAdicionarPaleta] = useState(true)
   const [removendo, setRemovendo] = useState(false)
+  const [corAtual, setCorAtual] = useState(value)
 
-  function handlePickColor(cor) {
-    onChange(cor)
+  function handleCommit() {
     if (adicionarPaleta) {
-      addCorPaleta(cor)
+      addCorPaleta(corAtual)
       setPaleta(getPaleta())
     }
   }
@@ -20,31 +21,26 @@ export default function ColorPicker({ value, onChange }) {
     setPaleta(getPaleta())
   }
 
+  function handleChange(cor) {
+    setCorAtual(cor)
+    onChange(cor)
+  }
+
   return (
     <div>
-      <div className="flex items-center gap-3 mb-3">
-        <label className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer" style={{ background: value }}>
-          <input
-            type="color"
-            value={value}
-            onChange={(e) => handlePickColor(e.target.value)}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
-        </label>
-        <div>
-          <p className="text-[11px] text-text-muted">Toque no quadrado pra escolher qualquer cor</p>
-          <p className="text-xs font-mono text-text-secondary mt-0.5">{value}</p>
-        </div>
+      <div className="flex justify-center mb-3">
+        <ColorWheel value={value} onChange={handleChange} onCommit={handleCommit} />
       </div>
+      <p className="text-xs font-mono text-text-secondary text-center mb-3">{corAtual}</p>
 
-      <label className="flex items-center gap-2 mb-3.5">
+      <label className="flex items-center justify-center gap-2 mb-4">
         <input
           type="checkbox"
           checked={adicionarPaleta}
           onChange={(e) => setAdicionarPaleta(e.target.checked)}
           className="w-3.5 h-3.5"
         />
-        <span className="text-[11px] text-text-secondary">Adicionar essa cor à paleta ao escolher</span>
+        <span className="text-[11px] text-text-secondary">Adicionar essa cor à paleta ao soltar</span>
       </label>
 
       {paleta.length > 0 && (
@@ -59,7 +55,7 @@ export default function ColorPicker({ value, onChange }) {
             {paleta.map((cor) => (
               <div key={cor} className="relative">
                 <button
-                  onClick={() => (removendo ? handleRemoverDaPaleta(cor) : onChange(cor))}
+                  onClick={() => (removendo ? handleRemoverDaPaleta(cor) : handleChange(cor))}
                   className="w-7 h-7 rounded-full flex items-center justify-center"
                   style={{ background: removendo ? '#1e1414' : cor, border: cor === value && !removendo ? '2px solid #e5e5e3' : '2px solid transparent' }}
                 >

@@ -55,18 +55,25 @@ export default function Dashboard() {
     .filter((c) => c.tipo !== 'cartao_credito')
     .reduce((acc, c) => acc + (saldoPorConta[c.id] || 0), 0)
 
-  const cartao = contas.find((c) => c.tipo === 'cartao_credito')
-  const limiteUsado = cartao
-    ? transacoes
-        .filter((t) => t.conta_id === cartao.id && t.status === 'pendente' && t.tipo === 'despesa')
-        .reduce((acc, t) => acc + (Number(t.valor) || 0), 0)
-    : 0
+  const limiteUsadoPorConta = useMemo(() => {
+    const map = {}
+    contas
+      .filter((c) => c.tipo === 'cartao_credito')
+      .forEach((c) => {
+        map[c.id] = transacoes
+          .filter((t) => t.conta_id === c.id && t.status === 'pendente' && t.tipo === 'despesa')
+          .reduce((acc, t) => acc + (Number(t.valor) || 0), 0)
+      })
+    return map
+  }, [contas, transacoes])
 
   const contasParaStack = contas.map((c) => ({
     id: c.id,
     nome: c.nome,
     valorExibido:
-      c.tipo === 'cartao_credito' ? formatBRL((c.limite || 0) - limiteUsado) : formatBRL(saldoPorConta[c.id] || 0),
+      c.tipo === 'cartao_credito'
+        ? formatBRL((c.limite || 0) - (limiteUsadoPorConta[c.id] || 0))
+        : formatBRL(saldoPorConta[c.id] || 0),
     legenda: c.tipo === 'cartao_credito' ? 'disponível' : null,
   }))
 
