@@ -23,7 +23,7 @@ const NAV_ITEMS = [
   { label: 'Categorias', icon: IconTag, path: '/categorias' },
   { label: 'Transações', icon: IconArrowsExchange, path: '/transacoes' },
   { label: 'Calculadora de juros compostos', icon: IconCalculator, path: '/juros-compostos', badge: 'em breve' },
-  { label: 'Objetivos', icon: IconTarget, path: '/objetivos', badge: 'em breve' },
+  { label: 'Objetivos', icon: IconTarget, path: '/objetivos' },
 ]
 
 export default function SideMenu({ onClose }) {

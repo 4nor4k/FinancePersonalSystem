@@ -92,3 +92,9 @@ export const mockWishlist = [
   { id: 'w1', perfil_id: 'p-pessoal', nome: 'Fone bluetooth', preco: 350, link_produto: '', link_imagem: '', meta_data: dataRelativa(44) },
   { id: 'w2', perfil_id: 'p-pessoal', nome: 'Cadeira gamer', preco: 900, link_produto: '', link_imagem: '', meta_data: dataRelativa(-12) },
 ]
+
+export const mockObjetivos = [
+  { id: 'o1', perfil_id: 'p-pessoal', nome: 'Reserva de emergência', valor_meta: 15000, valor_atual: 6200, icone: 'ti-shield', cor: '#7fd88f', meta_data: dataNoMes(-8, 1) },
+  { id: 'o2', perfil_id: 'p-pessoal', nome: 'Carro novo', valor_meta: 40000, valor_atual: 9500, icone: 'ti-car', cor: '#6ab8d9', meta_data: dataNoMes(-14, 1) },
+  { id: 'o3', perfil_id: 'p-empresa', nome: 'Capital de giro', valor_meta: 20000, valor_atual: 20000, icone: 'ti-briefcase', cor: '#4fce7a', meta_data: null },
+]

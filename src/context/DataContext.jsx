@@ -9,6 +9,7 @@ import {
   mockTransacoes,
   mockNotas,
   mockWishlist,
+  mockObjetivos,
 } from '../lib/mockData'
 
 const DataContext = createContext(null)
@@ -34,6 +35,7 @@ export function DataProvider({ children }) {
   const [transacoes, setTransacoes] = useState([])
   const [notas, setNotas] = useState([])
   const [wishlist, setWishlist] = useState([])
+  const [objetivos, setObjetivos] = useState([])
   const [activeProfileId, setActiveProfileId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [valuesHidden, setValuesHiddenState] = useState(
@@ -59,6 +61,7 @@ export function DataProvider({ children }) {
         setTransacoes(mockTransacoes)
         setNotas(mockNotas)
         setWishlist(mockWishlist)
+        setObjetivos(mockObjetivos)
         setActiveProfileId(mockPerfis[0].id)
         setLoading(false)
         return
@@ -69,7 +72,7 @@ export function DataProvider({ children }) {
         return
       }
 
-      const [p, c, cat, rec, t, n, w] = await Promise.all([
+      const [p, c, cat, rec, t, n, w, o] = await Promise.all([
         supabase.from('perfis').select('*').order('criado_em'),
         supabase.from('contas').select('*'),
         supabase.from('categorias').select('*'),
@@ -77,10 +80,11 @@ export function DataProvider({ children }) {
         supabase.from('transacoes').select('*').order('data'),
         supabase.from('notas').select('*').order('atualizado_em', { ascending: false }),
         supabase.from('wishlist_itens').select('*'),
+        supabase.from('objetivos').select('*'),
       ])
 
       if (cancelled) return
-      ;[p, c, cat, rec, t, n, w].forEach((r) => reportError(r.error, 'carregar dados'))
+      ;[p, c, cat, rec, t, n, w, o].forEach((r) => reportError(r.error, 'carregar dados'))
 
       let perfisData = p.data || []
 
@@ -102,6 +106,7 @@ export function DataProvider({ children }) {
       setTransacoes(t.data || [])
       setNotas(n.data || [])
       setWishlist(w.data || [])
+      setObjetivos(o.data || [])
       setActiveProfileId(perfisData[0]?.id ?? null)
       setLoading(false)
     }
@@ -448,6 +453,70 @@ export function DataProvider({ children }) {
     [isDemo, addTransacao]
   )
 
+  // ---------- Objetivos ----------
+  const addObjetivo = useCallback(
+    async ({ nome, valorMeta, icone, cor, metaData }) => {
+      const payload = {
+        nome,
+        valor_meta: valorMeta,
+        valor_atual: 0,
+        icone: icone || 'ti-target',
+        cor: cor || '#ff8a3d',
+        meta_data: metaData || null,
+      }
+      if (isDemo) {
+        const novo = { id: 'o-' + Date.now(), perfil_id: activeProfileId, ...payload }
+        setObjetivos((prev) => [...prev, novo])
+        return novo
+      }
+      const { data, error } = await supabase
+        .from('objetivos')
+        .insert({ perfil_id: activeProfileId, ...payload })
+        .select()
+        .single()
+      if (reportError(error, 'criar objetivo')) return null
+      if (data) setObjetivos((prev) => [...prev, data])
+      return data
+    },
+    [isDemo, activeProfileId]
+  )
+
+  const updateObjetivo = useCallback(
+    async (id, patch) => {
+      setObjetivos((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)))
+      if (!isDemo) {
+        const { error } = await supabase.from('objetivos').update(patch).eq('id', id)
+        reportError(error, 'atualizar objetivo')
+      }
+    },
+    [isDemo]
+  )
+
+  const deleteObjetivo = useCallback(
+    async (id) => {
+      setObjetivos((prev) => prev.filter((o) => o.id !== id))
+      if (!isDemo) {
+        const { error } = await supabase.from('objetivos').delete().eq('id', id)
+        reportError(error, 'excluir objetivo')
+      }
+    },
+    [isDemo]
+  )
+
+  // Aportar: soma o valor no progresso do objetivo e, opcionalmente, já
+  // registra a saída como uma despesa de verdade numa conta (mesma lógica
+  // de "comprar" da wishlist).
+  const aportarObjetivo = useCallback(
+    async (objetivo, valorAporte, transacaoPayload) => {
+      const novoValor = (objetivo.valor_atual || 0) + valorAporte
+      await updateObjetivo(objetivo.id, { valor_atual: novoValor })
+      if (transacaoPayload) {
+        await addTransacao({ ...transacaoPayload, tipo: 'despesa', valor: valorAporte })
+      }
+    },
+    [updateObjetivo, addTransacao]
+  )
+
   const value = {
     loading,
     valuesHidden,
@@ -481,6 +550,11 @@ export function DataProvider({ children }) {
     addWishlistItem,
     deleteWishlistItem,
     comprarWishlistItem,
+    objetivos: objetivos.filter((o) => o.perfil_id === activeProfileId),
+    addObjetivo,
+    updateObjetivo,
+    deleteObjetivo,
+    aportarObjetivo,
   }
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
