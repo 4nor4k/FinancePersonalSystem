@@ -134,12 +134,23 @@ export function DataProvider({ children }) {
     document.documentElement.style.setProperty('--accent-bg', activeProfile.cor_bg)
   }, [activeProfile])
 
-  // Dólar e ouro -- não dependem de perfil, busca uma vez só
+  // Dólar e ouro -- não dependem de perfil, busca uma vez e atualiza a cada 1 minuto
   useEffect(() => {
-    fetchCambioOuro().then(setMercado)
+    let ativo = true
+    function carregar() {
+      fetchCambioOuro().then((res) => {
+        if (ativo) setMercado(res)
+      })
+    }
+    carregar()
+    const intervalo = setInterval(carregar, 60000)
+    return () => {
+      ativo = false
+      clearInterval(intervalo)
+    }
   }, [])
 
-  // Cotações das ações/FIIs da watchlist do perfil ativo
+  // Cotações das ações/FIIs da watchlist do perfil ativo -- também a cada 1 minuto
   const tickersDoPerfilAtivo = watchlistAtivos
     .filter((w) => w.perfil_id === activeProfileId)
     .map((w) => w.ticker)
@@ -151,10 +162,20 @@ export function DataProvider({ children }) {
       setCotacoesErro(null)
       return
     }
-    fetchStockQuotes(tickersKey.split(',')).then(({ data, erro }) => {
-      setCotacoes(data)
-      setCotacoesErro(erro)
-    })
+    let ativo = true
+    function carregar() {
+      fetchStockQuotes(tickersKey.split(',')).then(({ data, erro }) => {
+        if (!ativo) return
+        setCotacoes(data)
+        setCotacoesErro(erro)
+      })
+    }
+    carregar()
+    const intervalo = setInterval(carregar, 60000)
+    return () => {
+      ativo = false
+      clearInterval(intervalo)
+    }
   }, [tickersKey])
 
   // ---------- Perfis ----------
