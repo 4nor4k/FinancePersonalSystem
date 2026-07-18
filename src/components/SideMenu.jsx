@@ -26,10 +26,10 @@ const NAV_ITEMS = [
   { label: 'Contas', icon: IconWallet, path: '/contas' },
   { label: 'Categorias', icon: IconTag, path: '/categorias' },
   { label: 'Transações', icon: IconArrowsExchange, path: '/transacoes' },
-  { label: 'Calculadora de juros compostos', icon: IconCalculator, path: '/juros-compostos' },
   { label: 'Objetivos', icon: IconTarget, path: '/objetivos' },
   { label: 'Cotações', icon: IconChartLine, path: '/cotacoes' },
   { label: 'Lista de desejos', icon: IconHeart, path: '/wishlist' },
+  { label: 'Calculadora de juros compostos', icon: IconCalculator, path: '/juros-compostos' },
 ]
 
 export default function SideMenu({ onClose }) {

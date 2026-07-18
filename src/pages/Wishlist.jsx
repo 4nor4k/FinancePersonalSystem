@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconPlus, IconPhoto, IconPhotoPlus, IconX, IconTrash } from '@tabler/icons-react'
+import { IconChevronLeft, IconPlus, IconPhoto, IconPhotoPlus, IconX, IconTrash, IconShoppingBag } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL } from '../lib/format'
-import SwipeableRow from '../components/SwipeableRow'
 
 export default function Wishlist() {
   const navigate = useNavigate()
@@ -51,44 +50,51 @@ export default function Wishlist() {
         </button>
       </div>
 
-      <div className="flex flex-col gap-2.5">
+      <div className="grid grid-cols-2 gap-3">
         {wishlist.map((item) => {
           const vencido = item.meta_data && item.meta_data < hoje
           return (
-            <SwipeableRow key={item.id} actions={[{ icon: IconTrash, bg: '#2a1e1e', color: '#d97a7a', onClick: () => deleteWishlistItem(item.id) }]}>
-              <div className="p-3 flex gap-3">
-                <div className="w-16 h-16 bg-bg-raised rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {item.link_imagem ? (
-                    <img src={item.link_imagem} alt={item.nome} className="w-full h-full object-cover" />
-                  ) : (
-                    <IconPhoto size={24} className="text-text-muted" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium mb-0.5">{item.nome}</p>
-                  <p className="text-sm mb-1" style={{ color: 'var(--accent-color)' }}>{formatBRL(item.preco)}</p>
-                  <p className="text-[11px]" style={{ color: vencido ? '#e2716f' : '#7a7a77' }}>
-                    {item.meta_data
-                      ? `Meta${vencido ? ' vencida' : ''}: ${item.meta_data.slice(8, 10)}/${item.meta_data.slice(5, 7)}`
-                      : 'Sem meta definida'}
-                  </p>
-                </div>
+            <div key={item.id} className="rounded-2xl overflow-hidden" style={{ background: 'var(--card-tone-2)', border: '0.5px solid #2a2620' }}>
+              <div className="relative aspect-square bg-bg-raised">
+                {item.link_imagem ? (
+                  <img src={item.link_imagem} alt={item.nome} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <IconPhoto size={26} className="text-text-muted" />
+                  </div>
+                )}
                 <button
-                  onClick={() => setComprando(item)}
-                  className="self-center rounded-lg px-3 py-2 text-xs font-medium"
-                  style={{ background: 'var(--accent-bg)', color: 'var(--accent-color)' }}
+                  onClick={() => deleteWishlistItem(item.id)}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/55 flex items-center justify-center"
                 >
-                  Comprar
+                  <IconTrash size={13} color="#e5e5e3" />
                 </button>
               </div>
-            </SwipeableRow>
+              <div className="p-3">
+                <p className="text-xs font-medium truncate mb-0.5">{item.nome}</p>
+                <p className="text-[10px] mb-2" style={{ color: vencido ? '#e2716f' : '#7a7a77' }}>
+                  {item.meta_data
+                    ? `${vencido ? 'Vencida ' : ''}${item.meta_data.slice(8, 10)}/${item.meta_data.slice(5, 7)}`
+                    : 'Sem meta'}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{formatBRL(item.preco)}</span>
+                  <button
+                    onClick={() => setComprando(item)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: 'var(--accent-color)' }}
+                  >
+                    <IconShoppingBag size={14} color="#1a0d05" />
+                  </button>
+                </div>
+              </div>
+            </div>
           )
         })}
         {wishlist.length === 0 && (
-          <p className="text-xs text-text-muted text-center py-6">Sua lista de desejos está vazia.</p>
+          <p className="text-xs text-text-muted text-center py-6 col-span-2">Sua lista de desejos está vazia.</p>
         )}
       </div>
-      <p className="text-[10px] text-text-muted text-center -mt-1 mb-1">Deslize um item pra excluir</p>
 
       {criando && (
         <Overlay onClose={() => setCriando(false)}>

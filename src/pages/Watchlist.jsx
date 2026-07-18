@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconChevronLeft, IconPlus, IconX } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL } from '../lib/format'
 import TrendTriangle from '../components/TrendTriangle'
-import SwipeableRow from '../components/SwipeableRow'
 import Overlay from '../components/Overlay'
 
 export default function Watchlist() {
@@ -35,7 +34,7 @@ export default function Watchlist() {
         </button>
       </div>
 
-      <p className="text-[11px] text-text-muted mb-3">Deslize um ativo pra parar de acompanhar</p>
+      <p className="text-[11px] text-text-muted mb-3">Toque no "x" pra parar de acompanhar um ativo</p>
 
       {cotacoesErro && (
         <div className="bg-[#1e1414] rounded-xl p-3 mb-3">
@@ -44,31 +43,44 @@ export default function Watchlist() {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-2 gap-3">
         {watchlistAtivos.map((ativo) => {
           const cot = cotacoes[ativo.ticker]
           const alta = cot && cot.variacaoPct >= 0
+          const corFundo = alta ? '#17301f' : '#301717'
+          const corTexto = alta ? '#7fd88f' : '#e2716f'
           return (
-            <SwipeableRow key={ativo.id} actions={[{ icon: IconTrash, bg: '#2a1e1e', color: '#d97a7a', onClick: () => removeAtivoWatchlist(ativo.id) }]}>
-              <div className="p-3.5 flex items-center justify-between">
-                <span className="text-sm font-medium">{ativo.ticker}</span>
+            <div key={ativo.id} className="rounded-2xl overflow-hidden" style={{ background: 'var(--card-tone-2)' }}>
+              <div className="p-3.5 relative">
+                <button
+                  onClick={() => removeAtivoWatchlist(ativo.id)}
+                  className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-black/40 flex items-center justify-center"
+                >
+                  <IconX size={11} color="#e5e5e3" />
+                </button>
+                <p className="text-[11px] text-text-secondary mb-1.5 pr-5">{ativo.ticker}</p>
                 {cot ? (
-                  <div className="text-right">
-                    <p className="text-sm">{formatBRL(cot.preco)}</p>
-                    <p className="text-[11px] flex items-center justify-end gap-1 mt-0.5" style={{ color: alta ? '#7fd88f' : '#e2716f' }}>
-                      <TrendTriangle up={alta} size={6} />
-                      {Math.abs(cot.variacaoPct || 0).toFixed(2)}%
-                    </p>
-                  </div>
+                  <p className="text-lg font-medium">{formatBRL(cot.preco)}</p>
                 ) : (
-                  <span className="text-xs text-text-muted">{cotacoesErro ? 'indisponível' : 'carregando...'}</span>
+                  <p className="text-xs text-text-muted">{cotacoesErro ? 'indisponível' : 'carregando...'}</p>
                 )}
               </div>
-            </SwipeableRow>
+              {cot && (
+                <div className="px-3.5 py-2.5 flex items-center justify-between" style={{ background: corFundo }}>
+                  <span className="text-xs font-medium flex items-center gap-1" style={{ color: corTexto }}>
+                    <TrendTriangle up={alta} size={6} />
+                    {Math.abs(cot.variacaoPct || 0).toFixed(2)}%
+                  </span>
+                  <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,0.25)', color: corTexto }}>
+                    {alta ? 'alta' : 'baixa'}
+                  </span>
+                </div>
+              )}
+            </div>
           )
         })}
         {watchlistAtivos.length === 0 && (
-          <p className="text-xs text-text-muted text-center py-6">Nenhum ativo acompanhado ainda -- adicione com o "+".</p>
+          <p className="text-xs text-text-muted text-center py-6 col-span-2">Nenhum ativo acompanhado ainda -- adicione com o "+".</p>
         )}
       </div>
 

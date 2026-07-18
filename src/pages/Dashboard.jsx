@@ -262,19 +262,25 @@ export default function Dashboard() {
             {watchlistAtivos.slice(0, 4).map((ativo) => {
               const cot = cotacoes[ativo.ticker]
               const alta = cot && cot.variacaoPct >= 0
+              const corFundo = alta ? '#17301f' : '#301717'
+              const corTexto = alta ? '#7fd88f' : '#e2716f'
               return (
-                <Link to="/cotacoes" key={ativo.id} className="bg-bg-card rounded-2xl p-3">
-                  <p className="text-xs font-medium mb-1">{ativo.ticker}</p>
-                  {cot ? (
-                    <>
-                      <p className="text-sm">{formatBRL(cot.preco)}</p>
-                      <p className="text-[11px] flex items-center gap-1 mt-0.5" style={{ color: alta ? '#7fd88f' : '#e2716f' }}>
-                        <TrendTriangle up={alta} size={6} />
+                <Link to="/cotacoes" key={ativo.id} className="rounded-2xl overflow-hidden" style={{ background: 'var(--card-tone-2)' }}>
+                  <div className="p-3">
+                    <p className="text-[11px] text-text-secondary mb-1">{ativo.ticker}</p>
+                    {cot ? (
+                      <p className="text-sm font-medium">{formatBRL(cot.preco)}</p>
+                    ) : (
+                      <p className="text-xs text-text-muted">carregando...</p>
+                    )}
+                  </div>
+                  {cot && (
+                    <div className="px-3 py-1.5 flex items-center gap-1" style={{ background: corFundo }}>
+                      <TrendTriangle up={alta} size={6} />
+                      <span className="text-[11px] font-medium" style={{ color: corTexto }}>
                         {Math.abs(cot.variacaoPct || 0).toFixed(2)}%
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-xs text-text-muted">carregando...</p>
+                      </span>
+                    </div>
                   )}
                 </Link>
               )

@@ -180,7 +180,7 @@ export function DataProvider({ children }) {
 
   // ---------- Perfis ----------
   const addProfile = useCallback(
-    async (nome, cor = '#ff8a3d') => {
+    async (nome, cor = '#f5f5f3') => {
       const cor_bg = cor + '22'
       if (isDemo) {
         const novo = { id: 'p-' + Date.now(), nome, cor, cor_bg }
@@ -514,7 +514,7 @@ export function DataProvider({ children }) {
         valor_meta: valorMeta,
         valor_atual: 0,
         icone: icone || 'ti-target',
-        cor: cor || '#ff8a3d',
+        cor: cor || '#f5f5f3',
         meta_data: metaData || null,
       }
       if (isDemo) {
