@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconChevronRight, IconAdjustments, IconArrowDown, IconArrowUp, IconCheck, IconEdit, IconTrash } from '@tabler/icons-react'
+import { IconChevronLeft, IconChevronRight, IconAdjustments, IconArrowDown, IconArrowUp, IconCheck, IconEdit, IconTrash, IconRepeat } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL } from '../lib/format'
 import SwipeableRow from '../components/SwipeableRow'
+import Overlay from '../components/Overlay'
 
 export default function Transacoes() {
   const navigate = useNavigate()
@@ -11,6 +12,7 @@ export default function Transacoes() {
   const [filtroTipo, setFiltroTipo] = useState('todas')
   const [mesRef, setMesRef] = useState(new Date().toISOString().slice(0, 7))
   const [ordenacao, setOrdenacao] = useState('data')
+  const [excluindo, setExcluindo] = useState(null)
 
   function mudarMes(delta) {
     const [ano, mes] = mesRef.split('-').map(Number)
@@ -38,13 +40,17 @@ export default function Transacoes() {
 
   const [nomeMes, ano] = new Date(mesRef + '-02').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).split(' de ')
 
-  async function handleExcluir(t) {
+  function handleExcluir(t) {
     if (t.recorrencia_id) {
-      const escolha = confirm('Excluir apenas este mês? OK = só este, Cancelar = este e os próximos')
-      await excluirTransacao(t.id, escolha ? 'este' : 'proximos')
+      setExcluindo(t)
     } else {
-      await excluirTransacao(t.id, 'este')
+      excluirTransacao(t.id, 'este')
     }
+  }
+
+  async function confirmarExclusao(modo) {
+    await excluirTransacao(excluindo.id, modo)
+    setExcluindo(null)
   }
 
   return (
@@ -156,6 +162,41 @@ export default function Transacoes() {
           )
         })}
       </div>
+
+      {excluindo && (
+        <Overlay onClose={() => setExcluindo(null)}>
+          <div className="flex justify-center mb-3.5">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-bg)' }}>
+              <IconRepeat size={20} style={{ color: 'var(--accent-color)' }} />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-center mb-1.5">Essa transação se repete</p>
+          <p className="text-xs text-text-secondary text-center mb-5">
+            {excluindo.anotacao || categorias.find((c) => c.id === excluindo.categoria_id)?.nome} · o que você quer excluir?
+          </p>
+
+          <button
+            onClick={() => confirmarExclusao('este')}
+            className="w-full bg-bg-raised rounded-xl p-3.5 mb-2 text-left"
+          >
+            <p className="text-sm">Somente este mês</p>
+            <p className="text-[11px] text-text-muted mt-0.5">Os outros meses continuam como estavam</p>
+          </button>
+
+          <button
+            onClick={() => confirmarExclusao('proximos')}
+            className="w-full rounded-xl p-3.5 mb-4 text-left"
+            style={{ background: 'var(--accent-bg)' }}
+          >
+            <p className="text-sm font-medium" style={{ color: 'var(--accent-color)' }}>Este e os próximos meses</p>
+            <p className="text-[11px] mt-0.5" style={{ color: 'var(--accent-color)', opacity: 0.75 }}>Remove todas as ocorrências futuras</p>
+          </button>
+
+          <button onClick={() => setExcluindo(null)} className="w-full text-xs text-text-secondary py-1">
+            Cancelar
+          </button>
+        </Overlay>
+      )}
     </div>
   )
 }

@@ -43,7 +43,7 @@ export default function Dashboard() {
     transacoes.forEach((t) => {
       if (t.status === 'pendente') return
       const sinal = t.tipo === 'receita' ? 1 : -1
-      map[t.conta_id] = (map[t.conta_id] || 0) + sinal * t.valor
+      map[t.conta_id] = (map[t.conta_id] || 0) + sinal * (Number(t.valor) || 0)
     })
     return map
   }, [contas, transacoes])
@@ -56,7 +56,7 @@ export default function Dashboard() {
   const limiteUsado = cartao
     ? transacoes
         .filter((t) => t.conta_id === cartao.id && t.status === 'pendente' && t.tipo === 'despesa')
-        .reduce((acc, t) => acc + t.valor, 0)
+        .reduce((acc, t) => acc + (Number(t.valor) || 0), 0)
     : 0
 
   const contasParaStack = contas.map((c) => ({
@@ -73,7 +73,7 @@ export default function Dashboard() {
     transacoes
       .filter((t) => t.tipo === 'despesa' && t.data.slice(0, 7) === mesRef)
       .forEach((t) => {
-        map[t.categoria_id] = (map[t.categoria_id] || 0) + t.valor
+        map[t.categoria_id] = (map[t.categoria_id] || 0) + (Number(t.valor) || 0)
       })
     return Object.entries(map)
       .map(([catId, valor]) => ({ categoria: categorias.find((c) => c.id === catId), valor }))
@@ -83,19 +83,22 @@ export default function Dashboard() {
 
   const totalCategorias = despesasPorCategoria.reduce((acc, x) => acc + x.valor, 0) || 1
 
-  const despesasPorMes = useMemo(() => {
-    const valores = Array(12).fill(0)
+  const balancoPorMes = useMemo(() => {
+    const despesas = Array(12).fill(0)
+    const receitas = Array(12).fill(0)
     transacoes
-      .filter((t) => t.tipo === 'despesa' && t.data.slice(0, 4) === String(anoAtual))
+      .filter((t) => t.data && t.data.slice(0, 4) === String(anoAtual))
       .forEach((t) => {
         const mesIdx = Number(t.data.slice(5, 7)) - 1
-        valores[mesIdx] += t.valor
+        if (mesIdx < 0 || mesIdx > 11) return
+        if (t.tipo === 'despesa') despesas[mesIdx] += Number(t.valor) || 0
+        else receitas[mesIdx] += Number(t.valor) || 0
       })
-    return valores
-      .map((valor, idx) => ({ idx, valor }))
-      .filter((m) => m.valor > 0)
+    return despesas
+      .map((despesa, idx) => ({ idx, despesa, receita: receitas[idx] }))
+      .filter((m) => m.despesa > 0 || m.receita > 0)
   }, [transacoes, anoAtual])
-  const maiorMes = Math.max(...despesasPorMes.map((m) => m.valor), 1)
+  const maiorValorMes = Math.max(...balancoPorMes.flatMap((m) => [m.despesa, m.receita]), 1)
   const mesAtualIdx = Number(mesRef.slice(5, 7)) - 1
 
   const proximasTransacoes = transacoes
@@ -105,11 +108,11 @@ export default function Dashboard() {
 
   const despesasMes = transacoes
     .filter((t) => t.tipo === 'despesa' && t.data.slice(0, 7) === mesRef)
-    .reduce((acc, t) => acc + t.valor, 0)
+    .reduce((acc, t) => acc + (Number(t.valor) || 0), 0)
 
   const receitasMes = transacoes
     .filter((t) => t.tipo === 'receita' && t.data.slice(0, 7) === mesRef)
-    .reduce((acc, t) => acc + t.valor, 0)
+    .reduce((acc, t) => acc + (Number(t.valor) || 0), 0)
 
   return (
     <div className="noise-bg max-w-md mx-auto px-4 pt-4 pb-56">
@@ -168,8 +171,8 @@ export default function Dashboard() {
       <ChartsCarousel
         despesasPorCategoria={despesasPorCategoria}
         totalCategorias={totalCategorias}
-        despesasPorMes={despesasPorMes}
-        maiorMes={maiorMes}
+        balancoPorMes={balancoPorMes}
+        maiorValorMes={maiorValorMes}
         mesAtualIdx={mesAtualIdx}
         anoAtual={anoAtual}
         mask={mask}
@@ -278,7 +281,7 @@ export default function Dashboard() {
   )
 }
 
-function ChartsCarousel({ despesasPorCategoria, totalCategorias, despesasPorMes, maiorMes, mesAtualIdx, anoAtual, mask }) {
+function ChartsCarousel({ despesasPorCategoria, totalCategorias, balancoPorMes, maiorValorMes, mesAtualIdx, anoAtual, mask }) {
   const trackRef = useRef(null)
   const [pagina, setPagina] = useState(0)
 
@@ -297,28 +300,47 @@ function ChartsCarousel({ despesasPorCategoria, totalCategorias, despesasPorMes,
         style={{ scrollSnapType: 'x mandatory' }}
       >
         <div className="min-w-full snap-center bg-bg-card rounded-2xl p-4">
-          <p className="text-sm text-text-secondary mb-4">Despesas ao longo de {anoAtual}</p>
-          {despesasPorMes.length === 0 ? (
-            <p className="text-sm text-text-muted">Sem despesas registradas em {anoAtual} ainda.</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-text-secondary">Balanço de {anoAtual}</p>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                <span className="w-2 h-2 rounded-full" style={{ background: '#e2716f' }} /> despesas
+              </span>
+              <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                <span className="w-2 h-2 rounded-full" style={{ background: '#7fd88f' }} /> receitas
+              </span>
+            </div>
+          </div>
+          {balancoPorMes.length === 0 ? (
+            <p className="text-sm text-text-muted">Sem transações registradas em {anoAtual} ainda.</p>
           ) : (
             <>
               <div className="flex items-end gap-2 h-20">
-                {despesasPorMes.map(({ idx, valor }) => (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1.5">
+                {balancoPorMes.map(({ idx, despesa, receita }) => (
+                  <div key={idx} className="flex-1 flex items-end justify-center gap-0.5 h-full">
                     <div
-                      className="w-full"
+                      className="flex-1 max-w-[10px]"
                       style={{
-                        height: `${Math.max((valor / maiorMes) * 100, 4)}%`,
-                        background: idx === mesAtualIdx ? 'var(--accent-color)' : '#232323',
-                        borderRadius: '6px 6px 2px 2px',
-                        boxShadow: idx === mesAtualIdx ? '0 0 16px 0 color-mix(in srgb, var(--accent-color) 45%, transparent)' : 'none',
+                        height: `${Math.max((despesa / maiorValorMes) * 100, despesa > 0 ? 4 : 0)}%`,
+                        background: '#e2716f',
+                        borderRadius: '4px 4px 1px 1px',
+                        opacity: idx === mesAtualIdx ? 1 : 0.75,
+                      }}
+                    />
+                    <div
+                      className="flex-1 max-w-[10px]"
+                      style={{
+                        height: `${Math.max((receita / maiorValorMes) * 100, receita > 0 ? 4 : 0)}%`,
+                        background: '#7fd88f',
+                        borderRadius: '4px 4px 1px 1px',
+                        opacity: idx === mesAtualIdx ? 1 : 0.75,
                       }}
                     />
                   </div>
                 ))}
               </div>
               <div className="flex gap-1.5 mt-2">
-                {despesasPorMes.map(({ idx }) => (
+                {balancoPorMes.map(({ idx }) => (
                   <span
                     key={idx}
                     className="flex-1 text-center text-[9px]"
