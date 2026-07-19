@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconChevronLeft, IconPlus, IconEdit, IconGripVertical } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
@@ -6,7 +6,10 @@ import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCu
 import { COR_PADRAO } from '../lib/colors'
 import ColorPicker from '../components/ColorPicker'
 
-const ICONES = ['ti-building-bank', 'ti-pig-money', 'ti-credit-card', 'ti-cash', 'ti-wallet', 'ti-coin']
+const ICONES = [
+  'ti-building-bank', 'ti-pig-money', 'ti-credit-card', 'ti-cash', 'ti-wallet', 'ti-coin',
+  'ti-currency-dollar', 'ti-receipt', 'ti-building', 'ti-report-money', 'ti-safe', 'ti-currency-real',
+]
 
 export default function Contas() {
   const navigate = useNavigate()
@@ -122,88 +125,77 @@ export default function Contas() {
   )
 }
 
+// Estratégia deliberadamente simples: durante o arrasto, só o item sendo
+// segurado se move visualmente (segue o dedo). Nada de reordenar a lista em
+// tempo real -- isso é o que causava o bug de "não muda". A posição final só
+// é calculada UMA VEZ, quando você solta o dedo, comparando com a posição
+// medida de cada item no momento em que o arrasto começou.
 function ReorderableList({ contas, editandoId, onToggleEditar, onUpdate, saldoConta, onReorder }) {
-  const [ordem, setOrdem] = useState(contas)
   const itemRefs = useRef([])
-  const dragState = useRef(null)
-  const [dragging, setDragging] = useState(null)
-
-  useEffect(() => {
-    if (!dragState.current) setOrdem(contas)
-  }, [contas])
-
-  function swap(i, j) {
-    setOrdem((prev) => {
-      const copy = [...prev]
-      ;[copy[i], copy[j]] = [copy[j], copy[i]]
-      return copy
-    })
-  }
-
-  function handlePointerMove(e) {
-    if (!dragState.current) return
-    e.preventDefault?.()
-    const p = e.touches ? e.touches[0] : e
-    const offset = p.clientY - dragState.current.startY
-    setDragging({ index: dragState.current.index, offset })
-
-    const currentIndex = dragState.current.index
-    const el = itemRefs.current[currentIndex]
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const middleY = rect.top + rect.height / 2 + offset
-
-    if (currentIndex > 0) {
-      const aboveRect = itemRefs.current[currentIndex - 1]?.getBoundingClientRect()
-      if (aboveRect && middleY < aboveRect.top + aboveRect.height / 2) {
-        swap(currentIndex, currentIndex - 1)
-        dragState.current.index = currentIndex - 1
-        return
-      }
-    }
-    if (currentIndex < ordem.length - 1) {
-      const belowRect = itemRefs.current[currentIndex + 1]?.getBoundingClientRect()
-      if (belowRect && middleY > belowRect.top + belowRect.height / 2) {
-        swap(currentIndex, currentIndex + 1)
-        dragState.current.index = currentIndex + 1
-      }
-    }
-  }
-
-  function handlePointerUp() {
-    window.removeEventListener('mousemove', handlePointerMove)
-    window.removeEventListener('touchmove', handlePointerMove)
-    window.removeEventListener('mouseup', handlePointerUp)
-    window.removeEventListener('touchend', handlePointerUp)
-    if (dragState.current) {
-      onReorder(ordem.map((c) => c.id))
-    }
-    dragState.current = null
-    setDragging(null)
-  }
+  const [dragInfo, setDragInfo] = useState(null)
 
   function handlePointerDown(e, index) {
     if (editandoId) return
-    const p = e.touches ? e.touches[0] : e
-    dragState.current = { index, startY: p.clientY }
-    setDragging({ index, offset: 0 })
-    window.addEventListener('mousemove', handlePointerMove)
-    window.addEventListener('touchmove', handlePointerMove, { passive: false })
-    window.addEventListener('mouseup', handlePointerUp)
-    window.addEventListener('touchend', handlePointerUp)
+    const startP = e.touches ? e.touches[0] : e
+    const startY = startP.clientY
+    const rects = itemRefs.current.map((el) => el?.getBoundingClientRect())
+    setDragInfo({ index, offset: 0 })
+
+    function onMove(ev) {
+      ev.preventDefault?.()
+      const p = ev.touches ? ev.touches[0] : ev
+      setDragInfo({ index, offset: p.clientY - startY })
+    }
+
+    function onUp(ev) {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('touchend', onUp)
+
+      const p = ev.changedTouches ? ev.changedTouches[0] : ev
+      const finalY = p.clientY
+
+      let targetIndex = index
+      let menorDistancia = Infinity
+      rects.forEach((r, i) => {
+        if (!r) return
+        const centro = r.top + r.height / 2
+        const distancia = Math.abs(finalY - centro)
+        if (distancia < menorDistancia) {
+          menorDistancia = distancia
+          targetIndex = i
+        }
+      })
+
+      setDragInfo(null)
+
+      if (targetIndex !== index) {
+        const novaOrdem = [...contas]
+        const [movida] = novaOrdem.splice(index, 1)
+        novaOrdem.splice(targetIndex, 0, movida)
+        onReorder(novaOrdem.map((c) => c.id))
+      }
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('mouseup', onUp)
+    window.addEventListener('touchend', onUp)
   }
 
   return (
     <div className="flex flex-col gap-2">
-      {ordem.map((c, i) => (
+      {contas.map((c, i) => (
         <div
           key={c.id}
           ref={(el) => (itemRefs.current[i] = el)}
           style={{
-            transform: dragging?.index === i ? `translateY(${dragging.offset}px)` : 'none',
+            transform: dragInfo?.index === i ? `translateY(${dragInfo.offset}px)` : 'none',
             position: 'relative',
-            zIndex: dragging?.index === i ? 10 : 1,
-            transition: dragging?.index === i ? 'none' : 'transform 0.15s ease',
+            zIndex: dragInfo?.index === i ? 10 : 1,
+            boxShadow: dragInfo?.index === i ? '0 10px 24px rgba(0,0,0,0.45)' : 'none',
+            transition: dragInfo?.index === i ? 'none' : 'transform 0.15s ease',
           }}
         >
           <ContaItem

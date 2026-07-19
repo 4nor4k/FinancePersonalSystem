@@ -5,7 +5,10 @@ import { useData } from '../context/DataContext'
 import { COR_PADRAO } from '../lib/colors'
 import ColorPicker from '../components/ColorPicker'
 
-const ICONES = ['ti-home', 'ti-car', 'ti-shopping-cart', 'ti-device-laptop', 'ti-tools', 'ti-heart', 'ti-plane', 'ti-school', 'ti-paw', 'ti-gift', 'ti-cash', 'ti-dots']
+const ICONES = [
+  'ti-home', 'ti-car', 'ti-shopping-cart', 'ti-device-laptop', 'ti-tools', 'ti-heart', 'ti-plane', 'ti-school', 'ti-paw', 'ti-gift', 'ti-cash', 'ti-dots',
+  'ti-bolt', 'ti-droplet', 'ti-wifi', 'ti-pizza', 'ti-medical-cross', 'ti-golf',
+]
 
 export default function Categorias() {
   const navigate = useNavigate()

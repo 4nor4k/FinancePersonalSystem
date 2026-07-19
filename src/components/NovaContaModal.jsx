@@ -4,7 +4,10 @@ import ColorPicker from './ColorPicker'
 import { COR_PADRAO } from '../lib/colors'
 import { digitsToCurrencyDisplay, currencyDisplayToNumber } from '../lib/format'
 
-const ICONES = ['ti-building-bank', 'ti-pig-money', 'ti-credit-card', 'ti-cash', 'ti-wallet', 'ti-coin']
+const ICONES = [
+  'ti-building-bank', 'ti-pig-money', 'ti-credit-card', 'ti-cash', 'ti-wallet', 'ti-coin',
+  'ti-currency-dollar', 'ti-receipt', 'ti-building', 'ti-report-money', 'ti-safe', 'ti-currency-real',
+]
 
 export default function NovaContaModal({ onClose, onCreated, addConta }) {
   const [nome, setNome] = useState('')

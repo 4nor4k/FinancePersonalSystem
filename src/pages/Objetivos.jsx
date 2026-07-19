@@ -7,7 +7,10 @@ import { COR_PADRAO } from '../lib/colors'
 import ColorPicker from '../components/ColorPicker'
 import Overlay from '../components/Overlay'
 
-const ICONES = ['ti-shield', 'ti-car', 'ti-home', 'ti-trending-up', 'ti-briefcase', 'ti-plane', 'ti-heart', 'ti-gift', 'ti-school', 'ti-pig-money', 'ti-target', 'ti-dots']
+const ICONES = [
+  'ti-shield', 'ti-car', 'ti-home', 'ti-trending-up', 'ti-briefcase', 'ti-plane', 'ti-heart', 'ti-gift', 'ti-school', 'ti-pig-money', 'ti-target', 'ti-dots',
+  'ti-building', 'ti-baby-carriage', 'ti-device-laptop', 'ti-beach', 'ti-diamond', 'ti-rocket',
+]
 
 export default function Objetivos() {
   const navigate = useNavigate()
