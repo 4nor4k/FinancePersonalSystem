@@ -29,6 +29,7 @@ create table contas (
   limite numeric,
   icone text not null default 'ti-building-bank',
   cor text not null default '#8a8a87',
+  ordem integer,
   criado_em timestamptz not null default now()
 );
 

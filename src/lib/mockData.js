@@ -24,10 +24,10 @@ export const mockPerfis = [
 ]
 
 export const mockContas = [
-  { id: 'c-corrente', perfil_id: 'p-pessoal', nome: 'Conta corrente', tipo: 'comum', limite: null, icone: 'ti-building-bank', cor: '#8a8a87' },
-  { id: 'c-poupanca', perfil_id: 'p-pessoal', nome: 'Poupança', tipo: 'comum', limite: null, icone: 'ti-pig-money', cor: '#8a8a87' },
-  { id: 'c-cartao', perfil_id: 'p-pessoal', nome: 'Cartão Nubank', tipo: 'cartao_credito', limite: 2000, icone: 'ti-credit-card', cor: '#c084e0' },
-  { id: 'c-empresa', perfil_id: 'p-empresa', nome: 'Conta PJ', tipo: 'comum', limite: null, icone: 'ti-building-bank', cor: '#8a8a87' },
+  { id: 'c-corrente', perfil_id: 'p-pessoal', nome: 'Conta corrente', tipo: 'comum', limite: null, icone: 'ti-building-bank', cor: '#8a8a87', ordem: 0 },
+  { id: 'c-poupanca', perfil_id: 'p-pessoal', nome: 'Poupança', tipo: 'comum', limite: null, icone: 'ti-pig-money', cor: '#8a8a87', ordem: 1 },
+  { id: 'c-cartao', perfil_id: 'p-pessoal', nome: 'Cartão Nubank', tipo: 'cartao_credito', limite: 2000, icone: 'ti-credit-card', cor: '#c084e0', ordem: 2 },
+  { id: 'c-empresa', perfil_id: 'p-empresa', nome: 'Conta PJ', tipo: 'comum', limite: null, icone: 'ti-building-bank', cor: '#8a8a87', ordem: 0 },
 ]
 
 export const mockCategorias = [

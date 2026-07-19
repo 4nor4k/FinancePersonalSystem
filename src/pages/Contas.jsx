@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconPlus, IconEdit } from '@tabler/icons-react'
+import { IconChevronLeft, IconPlus, IconEdit, IconGripVertical } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCurrencyDisplay } from '../lib/format'
 import { COR_PADRAO } from '../lib/colors'
@@ -10,7 +10,7 @@ const ICONES = ['ti-building-bank', 'ti-pig-money', 'ti-credit-card', 'ti-cash',
 
 export default function Contas() {
   const navigate = useNavigate()
-  const { contas, transacoes, addConta, updateConta } = useData()
+  const { contas, transacoes, addConta, updateConta, reordenarContas } = useData()
   const [criando, setCriando] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
   const [form, setForm] = useState({ nome: '', tipo: 'comum', limite: '', icone: ICONES[0], cor: COR_PADRAO })
@@ -103,19 +103,124 @@ export default function Contas() {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        {contas.map((c) => (
-          <ContaItem key={c.id} conta={c} editando={editandoId === c.id} onToggleEditar={() => setEditandoId(editandoId === c.id ? null : c.id)} onUpdate={updateConta} saldoLabel={saldoConta(c)} />
-        ))}
-        {contas.length === 0 && (
-          <p className="text-xs text-text-muted text-center py-6">Nenhuma conta ainda.</p>
-        )}
-      </div>
+      {contas.length > 1 && (
+        <p className="text-[11px] text-text-muted mb-2">Segure a alça e arraste pra reordenar</p>
+      )}
+
+      <ReorderableList
+        contas={contas}
+        editandoId={editandoId}
+        onToggleEditar={(id) => setEditandoId(editandoId === id ? null : id)}
+        onUpdate={updateConta}
+        saldoConta={saldoConta}
+        onReorder={reordenarContas}
+      />
+      {contas.length === 0 && (
+        <p className="text-xs text-text-muted text-center py-6">Nenhuma conta ainda.</p>
+      )}
     </div>
   )
 }
 
-function ContaItem({ conta: c, editando, onToggleEditar, onUpdate, saldoLabel }) {
+function ReorderableList({ contas, editandoId, onToggleEditar, onUpdate, saldoConta, onReorder }) {
+  const [ordem, setOrdem] = useState(contas)
+  const itemRefs = useRef([])
+  const dragState = useRef(null)
+  const [dragging, setDragging] = useState(null)
+
+  useEffect(() => {
+    if (!dragState.current) setOrdem(contas)
+  }, [contas])
+
+  function swap(i, j) {
+    setOrdem((prev) => {
+      const copy = [...prev]
+      ;[copy[i], copy[j]] = [copy[j], copy[i]]
+      return copy
+    })
+  }
+
+  function handlePointerMove(e) {
+    if (!dragState.current) return
+    e.preventDefault?.()
+    const p = e.touches ? e.touches[0] : e
+    const offset = p.clientY - dragState.current.startY
+    setDragging({ index: dragState.current.index, offset })
+
+    const currentIndex = dragState.current.index
+    const el = itemRefs.current[currentIndex]
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const middleY = rect.top + rect.height / 2 + offset
+
+    if (currentIndex > 0) {
+      const aboveRect = itemRefs.current[currentIndex - 1]?.getBoundingClientRect()
+      if (aboveRect && middleY < aboveRect.top + aboveRect.height / 2) {
+        swap(currentIndex, currentIndex - 1)
+        dragState.current.index = currentIndex - 1
+        return
+      }
+    }
+    if (currentIndex < ordem.length - 1) {
+      const belowRect = itemRefs.current[currentIndex + 1]?.getBoundingClientRect()
+      if (belowRect && middleY > belowRect.top + belowRect.height / 2) {
+        swap(currentIndex, currentIndex + 1)
+        dragState.current.index = currentIndex + 1
+      }
+    }
+  }
+
+  function handlePointerUp() {
+    window.removeEventListener('mousemove', handlePointerMove)
+    window.removeEventListener('touchmove', handlePointerMove)
+    window.removeEventListener('mouseup', handlePointerUp)
+    window.removeEventListener('touchend', handlePointerUp)
+    if (dragState.current) {
+      onReorder(ordem.map((c) => c.id))
+    }
+    dragState.current = null
+    setDragging(null)
+  }
+
+  function handlePointerDown(e, index) {
+    if (editandoId) return
+    const p = e.touches ? e.touches[0] : e
+    dragState.current = { index, startY: p.clientY }
+    setDragging({ index, offset: 0 })
+    window.addEventListener('mousemove', handlePointerMove)
+    window.addEventListener('touchmove', handlePointerMove, { passive: false })
+    window.addEventListener('mouseup', handlePointerUp)
+    window.addEventListener('touchend', handlePointerUp)
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {ordem.map((c, i) => (
+        <div
+          key={c.id}
+          ref={(el) => (itemRefs.current[i] = el)}
+          style={{
+            transform: dragging?.index === i ? `translateY(${dragging.offset}px)` : 'none',
+            position: 'relative',
+            zIndex: dragging?.index === i ? 10 : 1,
+            transition: dragging?.index === i ? 'none' : 'transform 0.15s ease',
+          }}
+        >
+          <ContaItem
+            conta={c}
+            editando={editandoId === c.id}
+            onToggleEditar={() => onToggleEditar(c.id)}
+            onUpdate={onUpdate}
+            saldoLabel={saldoConta(c)}
+            onDragHandleDown={(e) => handlePointerDown(e, i)}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ContaItem({ conta: c, editando, onToggleEditar, onUpdate, saldoLabel, onDragHandleDown }) {
   const [limiteEdit, setLimiteEdit] = useState(numberToCurrencyDisplay(c.limite))
 
   function salvarLimite() {
@@ -125,6 +230,13 @@ function ContaItem({ conta: c, editando, onToggleEditar, onUpdate, saldoLabel })
   return (
     <div className="bg-bg-card rounded-xl overflow-hidden">
       <div className="p-3 flex items-center">
+        <button
+          onMouseDown={onDragHandleDown}
+          onTouchStart={onDragHandleDown}
+          className="text-text-muted mr-1.5 cursor-grab touch-none"
+        >
+          <IconGripVertical size={16} />
+        </button>
         <div className="w-8.5 h-8.5 rounded-lg flex items-center justify-center mr-3" style={{ background: '#1a1a1a' }}>
           <i className={`ti ${c.icone || 'ti-building-bank'}`} style={{ fontSize: 15, color: c.cor || '#8a8a87' }} />
         </div>

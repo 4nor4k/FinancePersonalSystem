@@ -213,12 +213,17 @@ export function DataProvider({ children }) {
   // ---------- Contas ----------
   const addConta = useCallback(
     async ({ nome, tipo, limite, icone, cor }) => {
+      const contasDoperfil = contas.filter((c) => c.perfil_id === activeProfileId)
+      const proximaOrdem = contasDoperfil.length
+        ? Math.max(...contasDoperfil.map((c) => c.ordem ?? 0)) + 1
+        : 0
       const payload = {
         nome,
         tipo,
         limite: limite ?? null,
         icone: icone || (tipo === 'cartao_credito' ? 'ti-credit-card' : 'ti-building-bank'),
         cor: cor || '#8a8a87',
+        ordem: proximaOrdem,
       }
       if (isDemo) {
         const nova = { id: 'c-' + Date.now(), perfil_id: activeProfileId, ...payload }
@@ -234,7 +239,24 @@ export function DataProvider({ children }) {
       if (data) setContas((prev) => [...prev, data])
       return data
     },
-    [isDemo, activeProfileId]
+    [isDemo, activeProfileId, contas]
+  )
+
+  const reordenarContas = useCallback(
+    async (idsOrdenados) => {
+      setContas((prev) =>
+        prev.map((c) => {
+          const novaOrdem = idsOrdenados.indexOf(c.id)
+          return novaOrdem === -1 ? c : { ...c, ordem: novaOrdem }
+        })
+      )
+      if (!isDemo) {
+        await Promise.all(
+          idsOrdenados.map((id, idx) => supabase.from('contas').update({ ordem: idx }).eq('id', id))
+        )
+      }
+    },
+    [isDemo]
   )
 
   const updateConta = useCallback(
@@ -615,9 +637,12 @@ export function DataProvider({ children }) {
     setActiveProfileId,
     addProfile,
     updateProfile,
-    contas: contas.filter((c) => c.perfil_id === activeProfileId),
+    contas: contas
+      .filter((c) => c.perfil_id === activeProfileId)
+      .sort((a, b) => (a.ordem ?? 999) - (b.ordem ?? 999)),
     addConta,
     updateConta,
+    reordenarContas,
     categorias: categorias.filter((c) => c.perfil_id === activeProfileId),
     addCategoria,
     updateCategoria,

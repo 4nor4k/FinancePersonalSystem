@@ -4,13 +4,13 @@ import {
   IconX,
   IconEdit,
   IconPlus,
-  IconWallet,
-  IconTag,
+  IconCreditCard,
+  IconCategory2,
   IconArrowsExchange,
   IconCalculator,
   IconTarget,
-  IconChartLine,
-  IconHeart,
+  IconChartCandle,
+  IconGift,
   IconFingerprint,
   IconLogout,
   IconUser,
@@ -24,12 +24,12 @@ import { biometriaAtiva, biometriaDisponivel, registrarBiometria, desativarBiome
 
 
 const NAV_ITEMS = [
-  { label: 'Contas', icon: IconWallet, path: '/contas' },
-  { label: 'Categorias', icon: IconTag, path: '/categorias' },
+  { label: 'Contas', icon: IconCreditCard, path: '/contas' },
+  { label: 'Categorias', icon: IconCategory2, path: '/categorias' },
   { label: 'Transações', icon: IconArrowsExchange, path: '/transacoes' },
   { label: 'Objetivos', icon: IconTarget, path: '/objetivos' },
-  { label: 'Cotações', icon: IconChartLine, path: '/cotacoes' },
-  { label: 'Lista de desejos', icon: IconHeart, path: '/wishlist' },
+  { label: 'Cotações', icon: IconChartCandle, path: '/cotacoes' },
+  { label: 'Lista de desejos', icon: IconGift, path: '/wishlist' },
   { label: 'Calculadora de juros compostos', icon: IconCalculator, path: '/juros-compostos' },
 ]
 
