@@ -43,6 +43,7 @@ export default function SideMenu({ onClose }) {
   const [novaCor, setNovaCor] = useState(COR_PADRAO)
   const [bioAtiva, setBioAtiva] = useState(biometriaAtiva())
   const [bioErro, setBioErro] = useState('')
+  const [confirmandoSair, setConfirmandoSair] = useState(false)
 
   async function toggleBiometria() {
     setBioErro('')
@@ -83,12 +84,10 @@ export default function SideMenu({ onClose }) {
     setCriandoAberto(false)
   }
 
-  async function handleSair() {
-    if (confirm('Sair da conta?')) {
-      await signOut()
-      onClose()
-      navigate('/')
-    }
+  async function confirmarSair() {
+    await signOut()
+    onClose()
+    navigate('/')
   }
 
   return (
@@ -174,7 +173,7 @@ export default function SideMenu({ onClose }) {
         {bioErro && <p className="text-[10px] text-center mb-2" style={{ color: '#e2716f' }}>{bioErro}</p>}
 
         <button
-          onClick={handleSair}
+          onClick={() => setConfirmandoSair(true)}
           className="w-full bg-[#1e1414] text-[#e2716f] rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 mt-2"
         >
           <IconLogout size={16} />
@@ -213,6 +212,30 @@ export default function SideMenu({ onClose }) {
           <ColorPicker value={novaCor} onChange={setNovaCor} />
           <button onClick={criarPerfil} className="w-full rounded-lg py-3 text-sm font-medium mt-4" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
             Criar perfil
+          </button>
+        </Overlay>
+      )}
+
+      {confirmandoSair && (
+        <Overlay onClose={() => setConfirmandoSair(false)}>
+          <div className="flex justify-center mb-3.5">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: '#1e1414' }}>
+              <IconLogout size={20} color="#e2716f" />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-center mb-1.5">Sair da conta?</p>
+          <p className="text-xs text-text-secondary text-center mb-5">
+            Você vai precisar entrar de novo com seu email e senha pra acessar seus dados.
+          </p>
+          <button
+            onClick={confirmarSair}
+            className="w-full rounded-xl py-3.5 text-sm font-medium mb-2"
+            style={{ background: '#1e1414', color: '#e2716f' }}
+          >
+            Sair da conta
+          </button>
+          <button onClick={() => setConfirmandoSair(false)} className="w-full text-xs text-text-secondary py-1">
+            Cancelar
           </button>
         </Overlay>
       )}

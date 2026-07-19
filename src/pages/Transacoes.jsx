@@ -5,14 +5,20 @@ import { useData } from '../context/DataContext'
 import { formatBRL } from '../lib/format'
 import SwipeableRow from '../components/SwipeableRow'
 import Overlay from '../components/Overlay'
+import PickerField from '../components/PickerField'
 
 export default function Transacoes() {
   const navigate = useNavigate()
   const { transacoes, categorias, contas, consolidarTransacao, excluirTransacao } = useData()
   const [filtroTipo, setFiltroTipo] = useState('todas')
+  const [filtroContaId, setFiltroContaId] = useState('')
+  const [filtroCategoriaId, setFiltroCategoriaId] = useState('')
   const [mesRef, setMesRef] = useState(new Date().toISOString().slice(0, 7))
   const [ordenacao, setOrdenacao] = useState('data')
   const [excluindo, setExcluindo] = useState(null)
+  const [modalFiltros, setModalFiltros] = useState(false)
+
+  const filtrosAtivos = !!filtroContaId || !!filtroCategoriaId
 
   function mudarMes(delta) {
     const [ano, mes] = mesRef.split('-').map(Number)
@@ -23,13 +29,15 @@ export default function Transacoes() {
   const filtradas = useMemo(() => {
     let lista = transacoes.filter((t) => t.data.slice(0, 7) === mesRef)
     if (filtroTipo !== 'todas') lista = lista.filter((t) => t.tipo === filtroTipo)
+    if (filtroContaId) lista = lista.filter((t) => t.conta_id === filtroContaId)
+    if (filtroCategoriaId) lista = lista.filter((t) => t.categoria_id === filtroCategoriaId)
     lista = [...lista].sort((a, b) => {
       if (ordenacao === 'valor') return b.valor - a.valor
       if (ordenacao === 'categoria') return (a.categoria_id || '').localeCompare(b.categoria_id || '')
       return a.data.localeCompare(b.data)
     })
     return lista
-  }, [transacoes, filtroTipo, mesRef, ordenacao])
+  }, [transacoes, filtroTipo, filtroContaId, filtroCategoriaId, mesRef, ordenacao])
 
   const totalDespesas = transacoes
     .filter((t) => t.data.slice(0, 7) === mesRef && t.tipo === 'despesa')
@@ -60,7 +68,12 @@ export default function Transacoes() {
           <IconChevronLeft size={20} />
         </button>
         <span className="text-sm font-medium">Transações</span>
-        <IconAdjustments size={18} className="text-text-secondary" />
+        <button onClick={() => setModalFiltros(true)} className="relative">
+          <IconAdjustments size={18} style={{ color: filtrosAtivos ? 'var(--accent-color)' : '#8a8a87' }} />
+          {filtrosAtivos && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ background: 'var(--accent-color)' }} />
+          )}
+        </button>
       </div>
 
       <div className="flex items-center justify-between bg-bg-card rounded-lg px-3.5 py-2.5 mb-3">
@@ -195,6 +208,51 @@ export default function Transacoes() {
           <button onClick={() => setExcluindo(null)} className="w-full text-xs text-text-secondary py-1">
             Cancelar
           </button>
+        </Overlay>
+      )}
+
+      {modalFiltros && (
+        <Overlay onClose={() => setModalFiltros(false)}>
+          <p className="text-sm font-medium text-center mb-4">Filtrar transações</p>
+
+          <p className="text-[11px] text-text-muted mb-1.5">Conta</p>
+          <div className="mb-4">
+            <PickerField
+              placeholder="Todas as contas"
+              options={contas}
+              value={filtroContaId}
+              onChange={setFiltroContaId}
+            />
+          </div>
+
+          <p className="text-[11px] text-text-muted mb-1.5">Categoria</p>
+          <div className="mb-5">
+            <PickerField
+              placeholder="Todas as categorias"
+              options={categorias}
+              value={filtroCategoriaId}
+              onChange={setFiltroCategoriaId}
+            />
+          </div>
+
+          <button
+            onClick={() => setModalFiltros(false)}
+            className="w-full rounded-lg py-3 text-sm font-medium mb-2"
+            style={{ background: 'var(--accent-color)', color: '#1a0d05' }}
+          >
+            Aplicar
+          </button>
+          {filtrosAtivos && (
+            <button
+              onClick={() => {
+                setFiltroContaId('')
+                setFiltroCategoriaId('')
+              }}
+              className="w-full text-xs text-text-secondary py-1"
+            >
+              Limpar filtros
+            </button>
+          )}
         </Overlay>
       )}
     </div>

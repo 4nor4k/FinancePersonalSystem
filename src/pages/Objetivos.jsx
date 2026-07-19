@@ -6,6 +6,7 @@ import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCu
 import { COR_PADRAO } from '../lib/colors'
 import ColorPicker from '../components/ColorPicker'
 import Overlay from '../components/Overlay'
+import PickerField from '../components/PickerField'
 
 const ICONES = [
   'ti-shield', 'ti-car', 'ti-home', 'ti-trending-up', 'ti-briefcase', 'ti-plane', 'ti-heart', 'ti-gift', 'ti-school', 'ti-pig-money', 'ti-target', 'ti-dots',
@@ -245,24 +246,19 @@ function AportarModal({ objetivo, contas, categorias, onClose, onAportar }) {
       {registrarTransacao && (
         <>
           <p className="text-[11px] text-text-muted mb-1.5">Conta</p>
-          <select
-            value={contaId}
-            onChange={(e) => setContaId(e.target.value)}
-            className="w-full bg-bg-raised rounded-lg px-3 py-3 text-sm outline-none mb-3"
-          >
-            <option value="">Selecionar conta</option>
-            {contas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-          </select>
+          <div className="mb-3">
+            <PickerField placeholder="Selecionar conta" options={contas} value={contaId} onChange={setContaId} />
+          </div>
 
           <p className="text-[11px] text-text-muted mb-1.5">Categoria (opcional)</p>
-          <select
-            value={categoriaId}
-            onChange={(e) => setCategoriaId(e.target.value)}
-            className="w-full bg-bg-raised rounded-lg px-3 py-3 text-sm outline-none mb-4"
-          >
-            <option value="">Sem categoria</option>
-            {categorias.filter((c) => c.tipo === 'despesa').map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-          </select>
+          <div className="mb-4">
+            <PickerField
+              placeholder="Sem categoria"
+              options={categorias.filter((c) => c.tipo === 'despesa')}
+              value={categoriaId}
+              onChange={setCategoriaId}
+            />
+          </div>
         </>
       )}
 

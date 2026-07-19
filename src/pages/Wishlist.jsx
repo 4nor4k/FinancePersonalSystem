@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { IconChevronLeft, IconPlus, IconPhoto, IconPhotoPlus, IconX, IconTrash, IconShoppingBag } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber } from '../lib/format'
+import PickerField from '../components/PickerField'
 
 export default function Wishlist() {
   const navigate = useNavigate()
@@ -129,17 +130,21 @@ export default function Wishlist() {
           <p className="text-xs text-text-secondary text-center mb-4">{formatBRL(comprando.preco)}</p>
           <div className="mb-3">
             <p className="text-[11px] text-text-muted mb-1.5">Conta</p>
-            <select value={compraForm.conta_id} onChange={(e) => setCompraForm((f) => ({ ...f, conta_id: e.target.value }))} className="w-full bg-bg-raised rounded-lg px-3 py-3 text-sm outline-none">
-              <option value="">Selecionar conta</option>
-              {contas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </select>
+            <PickerField
+              placeholder="Selecionar conta"
+              options={contas}
+              value={compraForm.conta_id}
+              onChange={(id) => setCompraForm((f) => ({ ...f, conta_id: id }))}
+            />
           </div>
           <div className="mb-4">
             <p className="text-[11px] text-text-muted mb-1.5">Categoria</p>
-            <select value={compraForm.categoria_id} onChange={(e) => setCompraForm((f) => ({ ...f, categoria_id: e.target.value }))} className="w-full bg-bg-raised rounded-lg px-3 py-3 text-sm outline-none">
-              <option value="">Selecionar categoria</option>
-              {categorias.filter((c) => c.tipo === 'despesa').map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </select>
+            <PickerField
+              placeholder="Selecionar categoria"
+              options={categorias.filter((c) => c.tipo === 'despesa')}
+              value={compraForm.categoria_id}
+              onChange={(id) => setCompraForm((f) => ({ ...f, categoria_id: id }))}
+            />
           </div>
           <button onClick={handleComprar} className="w-full rounded-lg py-3 text-sm font-medium" style={{ background: 'var(--accent-color)', color: '#1a0d05' }}>
             Confirmar compra

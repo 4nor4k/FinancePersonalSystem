@@ -5,6 +5,7 @@ import { useData } from '../context/DataContext'
 import { digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCurrencyDisplay } from '../lib/format'
 import NovaContaModal from '../components/NovaContaModal'
 import NovaCategoriaModal from '../components/NovaCategoriaModal'
+import PickerField from '../components/PickerField'
 import Overlay from '../components/Overlay'
 
 export default function NovaTransacao() {
@@ -124,30 +125,22 @@ export default function NovaTransacao() {
       </div>
 
       <Field label="Conta">
-        <select
+        <PickerField
+          placeholder="Selecionar conta"
+          options={contas}
           value={contaId}
-          onChange={(e) => setContaId(e.target.value)}
-          className="flex-1 bg-bg-card rounded-lg px-3 py-3 text-sm outline-none"
-        >
-          <option value="">Selecionar conta</option>
-          {contas.map((c) => (
-            <option key={c.id} value={c.id}>{c.nome}</option>
-          ))}
-        </select>
+          onChange={setContaId}
+        />
         <IconButton onClick={() => setModalConta(true)} />
       </Field>
 
       <Field label="Categoria">
-        <select
+        <PickerField
+          placeholder="Selecionar categoria"
+          options={categoriasFiltradas}
           value={categoriaId}
-          onChange={(e) => setCategoriaId(e.target.value)}
-          className="flex-1 bg-bg-card rounded-lg px-3 py-3 text-sm outline-none"
-        >
-          <option value="">Selecionar categoria</option>
-          {categoriasFiltradas.map((c) => (
-            <option key={c.id} value={c.id}>{c.nome}</option>
-          ))}
-        </select>
+          onChange={setCategoriaId}
+        />
         <IconButton onClick={() => setModalCategoria(true)} />
       </Field>
 
