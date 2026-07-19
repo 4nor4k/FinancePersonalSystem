@@ -44,6 +44,8 @@ export default function Minigame() {
   const [finalScore, setFinalScore] = useState(0)
   const [highScore, setHighScore] = useState(() => Number(localStorage.getItem(HIGHSCORE_KEY)) || 0)
   const [isNewRecord, setIsNewRecord] = useState(false)
+  const highScoreRef = useRef(highScore)
+  useEffect(() => { highScoreRef.current = highScore }, [highScore])
 
   function criarEstado() {
     const stars = []
@@ -174,7 +176,7 @@ export default function Minigame() {
       ctx.fillStyle = '#050508'
       ctx.fillRect(0, 0, W, H)
 
-      // Starfield -- sempre rodando, s\u00f3 acelera/desacelera
+      // Starfield -- sempre rodando, só acelera/desacelera
       g.warpFactor += (g.targetWarp - g.warpFactor) * 0.06
       g.stars.forEach((s) => {
         const speed = s.baseSpeed * g.warpFactor
@@ -203,7 +205,7 @@ export default function Minigame() {
 
       const shipVisible = !(g.transitioning && g.transitionPhase !== 'ignite' && g.transitionPhase !== null && g.shipLaunch === 0 && g.transitionPhase !== 'settle')
 
-      // Tiro autom\u00e1tico
+      // Tiro automático
       if (!g.transitioning && ts - g.lastFire > PLAYER_FIRE_INTERVAL) {
         g.lastFire = ts
         const triple = ts < g.tripleUntil
@@ -227,7 +229,7 @@ export default function Minigame() {
       // Inimigos + tiro mirado
       g.enemies.forEach((e) => {
         e.y += e.speed
-        if (!g.transitioning && ts - e.lastFire > 1900 && e.y > 0 && e.y < H - 40) {
+        if (!g.transitioning && !e.dying && ts - e.lastFire > 1900 && e.y > 0 && e.y < H - 40) {
           e.lastFire = ts
           const dx = g.ship.x - e.x
           const dy = g.ship.y - e.y
@@ -244,22 +246,24 @@ export default function Minigame() {
       g.powerups.forEach((p) => { p.y += 1.3 })
       g.powerups = g.powerups.filter((p) => p.y < H + 20)
 
-      // Colis\u00e3o: tiro do jogador x asteroide/inimigo
+      // Colisão: tiro do jogador x asteroide/inimigo
       g.bullets.forEach((b) => {
         g.asteroids.forEach((a) => {
           if (!b.dead && !a.dead && dist(b, a) < a.r + 3) {
             b.dead = true; a.dead = true
             g.score += 10
             g.kills += 1
+            criarFragmentos(a.x, a.y)
             tentarDropPowerup(a.x, a.y)
           }
         })
         g.enemies.forEach((e) => {
-          if (!b.dead && !e.dead && dist(b, e) < e.r + 3) {
+          if (!b.dead && !e.dying && dist(b, e) < e.r + 3) {
             b.dead = true
             e.hp -= 1
-            if (e.hp <= 0) {
-              e.dead = true
+            if (e.hp <= 0 && !e.dying) {
+              e.dying = true
+              e.dyingStart = ts
               g.score += 25
               g.kills += 1
               tentarDropPowerup(e.x, e.y)
@@ -269,7 +273,19 @@ export default function Minigame() {
       })
       g.bullets = g.bullets.filter((b) => !b.dead)
       g.asteroids = g.asteroids.filter((a) => !a.dead)
-      g.enemies = g.enemies.filter((e) => !e.dead)
+      g.enemies = g.enemies.filter((e) => !e.dying || ts - e.dyingStart < 400)
+
+      function criarFragmentos(x, y) {
+        const n = 5 + Math.floor(Math.random() * 3)
+        for (let i = 0; i < n; i++) {
+          const ang = Math.random() * Math.PI * 2
+          const spd = 1 + Math.random() * 2.5
+          g.particles.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, size: 1.5 + Math.random() * 2, born: ts, life: 450 + Math.random() * 200 })
+        }
+      }
+
+      g.particles.forEach((p) => { p.x += p.vx; p.y += p.vy; p.vx *= 0.94; p.vy *= 0.94 })
+      g.particles = g.particles.filter((p) => ts - p.born < p.life)
 
       function tentarDropPowerup(x, y) {
         if (Math.random() < POWERUP_DROP_CHANCE) {
@@ -278,7 +294,7 @@ export default function Minigame() {
         }
       }
 
-      // Colis\u00e3o: nave x power-up
+      // Colisão: nave x power-up
       g.powerups.forEach((p) => {
         if (!p.dead && dist(p, g.ship) < SHIP_R + 10) {
           p.dead = true
@@ -295,12 +311,12 @@ export default function Minigame() {
       })
       g.powerups = g.powerups.filter((p) => !p.dead)
 
-      // Colis\u00e3o: nave x asteroide/inimigo/tiro inimigo
+      // Colisão: nave x asteroide/inimigo/tiro inimigo
       const protegido = ts < g.invincibleUntil || ts < g.shieldUntil
       if (!protegido && !g.transitioning) {
         let atingido = false
         g.asteroids.forEach((a) => { if (dist(a, g.ship) < a.r + SHIP_R - 6) { a.dead = true; atingido = true } })
-        g.enemies.forEach((e) => { if (dist(e, g.ship) < e.r + SHIP_R - 6) { e.dead = true; atingido = true } })
+        g.enemies.forEach((e) => { if (!e.dying && dist(e, g.ship) < e.r + SHIP_R - 6) { e.dead = true; atingido = true } })
         g.enemyBullets.forEach((b) => { if (dist(b, g.ship) < SHIP_R - 4) { b.dead = true; atingido = true } })
         if (atingido) {
           g.lives -= 1
@@ -323,13 +339,13 @@ export default function Minigame() {
         }
       }
 
-      // Pontua\u00e7\u00e3o por tempo vivo
+      // Pontuação por tempo vivo
       if (ts - g.lastSecondTick > 1000 && !g.transitioning) {
         g.lastSecondTick = ts
         g.score += 1
       }
 
-      // Avan\u00e7ar de n\u00edvel
+      // Avançar de nível
       if (!g.transitioning && g.kills >= g.level * LEVEL_KILL_THRESHOLD) {
         iniciarTransicaoNivel(ts)
       }
@@ -338,28 +354,46 @@ export default function Minigame() {
 
       // ---------- Desenho ----------
       g.asteroids.forEach((a) => drawIcon(ctx, a.shape, a.x, a.y, a.r * 2.1, '#f5f5f3', false))
+
+      g.particles.forEach((p) => {
+        const vida = 1 - (ts - p.born) / p.life
+        ctx.globalAlpha = Math.max(vida, 0)
+        ctx.fillStyle = '#c9c9c6'
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fill()
+      })
+      ctx.globalAlpha = 1
+
       g.enemies.forEach((e) => {
+        const alpha = e.dying ? Math.max(1 - (ts - e.dyingStart) / 400, 0) : 1
+        ctx.globalAlpha = alpha
         drawIcon(ctx, ENEMY_PATH, e.x, e.y, e.r * 2.2, e.color, true)
-        if (e.maxHp > 1) {
+        if (e.maxHp > 1 && !e.dying) {
           const w = 22
           ctx.fillStyle = '#2a1414'
           ctx.fillRect(e.x - w / 2, e.y + e.r + 3, w, 3)
           ctx.fillStyle = e.color
           ctx.fillRect(e.x - w / 2, e.y + e.r + 3, w * (e.hp / e.maxHp), 3)
         }
+        ctx.globalAlpha = 1
       })
       g.bullets.forEach((b) => {
         ctx.fillStyle = '#4fe3ff'
         ctx.shadowColor = '#4fe3ff'
-        ctx.shadowBlur = 6
-        ctx.fillRect(b.x - 1.5, b.y - 5, 3, 10)
+        ctx.shadowBlur = 7
+        ctx.beginPath()
+        ctx.arc(b.x, b.y, 3, 0, Math.PI * 2)
+        ctx.fill()
         ctx.shadowBlur = 0
       })
       g.enemyBullets.forEach((b) => {
         ctx.fillStyle = '#ff4f4f'
         ctx.shadowColor = '#ff4f4f'
-        ctx.shadowBlur = 6
-        ctx.fillRect(b.x - 1.5, b.y - 4, 3, 8)
+        ctx.shadowBlur = 7
+        ctx.beginPath()
+        ctx.arc(b.x, b.y, 2.6, 0, Math.PI * 2)
+        ctx.fill()
         ctx.shadowBlur = 0
       })
       g.powerups.forEach((p) => {
@@ -469,20 +503,26 @@ export default function Minigame() {
         />
 
         {status === 'playing' && (
-          <div className="absolute top-0 left-0 right-0 p-3 flex items-center justify-between pointer-events-none">
-            <div>
-              <p style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 7, color: '#7a7a77', margin: 0 }}>SCORE</p>
-              <p style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 11, color: '#f0f0ee', margin: '4px 0 0' }}>{String(hud.score).padStart(6, '0')}</p>
+          <div className="absolute top-0 left-0 right-0 p-3 pointer-events-none">
+            <div className="flex items-center justify-between mb-1.5">
+              <div>
+                <p style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 7, color: '#7a7a77', margin: 0 }}>SCORE</p>
+                <p style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 11, color: '#f0f0ee', margin: '4px 0 0' }}>{String(hud.score).padStart(6, '0')}</p>
+              </div>
+              <div style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 9, color: '#f5f5f3', background: '#141414', padding: '5px 8px', borderRadius: 6 }}>
+                NÍVEL {hud.level}
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 7, color: '#7a7a77', margin: 0 }}>RECORDE</p>
+                <p style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 11, color: '#f0f0ee', margin: '4px 0 0' }}>{String(highScore).padStart(6, '0')}</p>
+              </div>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1.5">
               {[0, 1, 2].map((i) => (
                 <svg key={i} viewBox="0 0 24 24" style={{ width: 15, height: 15, color: i < hud.lives ? '#ff4655' : '#2e2e33' }}>
                   <path fill="currentColor" d={HEART_PATH.d} />
                 </svg>
               ))}
-            </div>
-            <div style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 9, color: '#f5f5f3', background: '#141414', padding: '5px 8px', borderRadius: 6 }}>
-              NÍVEL {hud.level}
             </div>
           </div>
         )}
