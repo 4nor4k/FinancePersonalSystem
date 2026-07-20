@@ -39,7 +39,7 @@ export default function Minigame() {
   const canvasRef = useRef(null)
   const rafRef = useRef(null)
   const gameRef = useRef(null)
-  const [hud, setHud] = useState({ score: 0, lives: 3, level: 1 })
+  const [hud, setHud] = useState({ score: 0, lives: 3, level: 1, bombs: 0 })
   const [status, setStatus] = useState('start') // start | playing | paused | gameover
   const [finalScore, setFinalScore] = useState(0)
   const [highScore, setHighScore] = useState(() => Number(localStorage.getItem(HIGHSCORE_KEY)) || 0)
@@ -70,6 +70,8 @@ export default function Minigame() {
       invincibleUntil: 0,
       shieldUntil: 0,
       tripleUntil: 0,
+      bombCount: 0,
+      bombWave: null,
       lastFire: 0,
       lastSpawn: 0,
       lastEnemyFireCheck: 0,
@@ -86,12 +88,20 @@ export default function Minigame() {
 
   function iniciarJogo() {
     gameRef.current = criarEstado()
-    setHud({ score: 0, lives: 3, level: 1 })
+    setHud({ score: 0, lives: 3, level: 1, bombs: 0 })
     setStatus('playing')
   }
 
   function togglePausa() {
     setStatus((s) => (s === 'playing' ? 'paused' : s === 'paused' ? 'playing' : s))
+  }
+
+  function ativarBomba() {
+    const g = gameRef.current
+    if (!g || !g.bombCount || g.bombWave) return
+    g.bombCount -= 1
+    g.bombWave = { start: performance.now(), radius: 0, atingidos: new Set() }
+    setHud((h) => ({ ...h, bombs: g.bombCount }))
   }
 
   // ---------- Loop principal ----------
@@ -203,7 +213,8 @@ export default function Minigame() {
       g.ship.x = Math.max(SHIP_R, Math.min(W - SHIP_R, g.ship.x))
       g.ship.y = Math.max(SHIP_R, Math.min(H - SHIP_R, g.ship.y))
 
-      const shipVisible = !(g.transitioning && g.transitionPhase !== 'ignite' && g.transitionPhase !== null && g.shipLaunch === 0 && g.transitionPhase !== 'settle')
+      const fasesSemNave = ['levelText', 'settle']
+      const shipVisible = !(g.transitioning && fasesSemNave.includes(g.transitionPhase))
 
       // Tiro automático
       if (!g.transitioning && ts - g.lastFire > PLAYER_FIRE_INTERVAL) {
@@ -231,13 +242,16 @@ export default function Minigame() {
         if (e.y < H / 2) {
           e.y += e.speed
         } else {
-          // Chegou na linha de parada -- passa a flutuar em vez de travar
+          // Chegou na linha de parada -- entra em flutua\u00e7\u00e3o suave (com uma
+          // rampa de entrada, pra n\u00e3o "travar" saindo direto do movimento reto)
           if (e.floatBaseX === undefined) {
             e.floatBaseX = e.x
             e.floatSeed = Math.random() * Math.PI * 2
+            e.arrivedAt = ts
           }
-          e.x = e.floatBaseX + Math.sin(ts / 650 + e.floatSeed) * 16
-          e.y = H / 2 + Math.sin(ts / 950 + e.floatSeed) * 7
+          const entrada = Math.min((ts - e.arrivedAt) / 700, 1)
+          e.x = e.floatBaseX + Math.sin(ts / 900 + e.floatSeed) * 20 * entrada
+          e.y = H / 2 + Math.sin(ts / 1300 + e.floatSeed) * 9 * entrada
         }
         if (!g.transitioning && !e.dying && ts - e.lastFire > 1900 && e.y > 0 && e.y < H - 40) {
           e.lastFire = ts
@@ -300,8 +314,10 @@ export default function Minigame() {
 
       function tentarDropPowerup(x, y) {
         if (Math.random() < POWERUP_DROP_CHANCE) {
-          const tipos = ['escudo', 'triplo', 'bomba']
-          g.powerups.push({ x, y, tipo: tipos[Math.floor(Math.random() * tipos.length)] })
+          // Bomba \u00e9 mais rara -- vai pro arsenal, n\u00e3o ativa sozinha
+          const sorteio = Math.random()
+          const tipo = sorteio < 0.42 ? 'escudo' : sorteio < 0.84 ? 'triplo' : 'bomba'
+          g.powerups.push({ x, y, tipo })
         }
       }
 
@@ -312,15 +328,43 @@ export default function Minigame() {
           if (p.tipo === 'escudo') g.shieldUntil = ts + POWERUP_DURATION
           if (p.tipo === 'triplo') g.tripleUntil = ts + POWERUP_DURATION
           if (p.tipo === 'bomba') {
-            g.score += g.asteroids.length * 10 + g.enemies.length * 25
-            g.kills += g.asteroids.length + g.enemies.length
-            g.asteroids = []
-            g.enemies = []
-            g.enemyBullets = []
+            g.bombCount = Math.min((g.bombCount || 0) + 1, 3)
+            setHud((h) => ({ ...h, bombs: g.bombCount }))
           }
         }
       })
       g.powerups = g.powerups.filter((p) => !p.dead)
+
+      // Ativa\u00e7\u00e3o da bomba: onda de energia saindo da nave
+      if (g.bombWave) {
+        const decorrido = ts - g.bombWave.start
+        g.bombWave.radius = decorrido * 0.9
+        g.asteroids.forEach((a) => {
+          if (!a.dead && !g.bombWave.atingidos.has(a) && dist(a, g.ship) < g.bombWave.radius) {
+            g.bombWave.atingidos.add(a)
+            a.dead = true
+            g.score += 10
+            g.kills += 1
+            criarFragmentos(a.x, a.y)
+          }
+        })
+        g.enemies.forEach((e) => {
+          if (!e.dying && !g.bombWave.atingidos.has(e) && dist(e, g.ship) < g.bombWave.radius) {
+            g.bombWave.atingidos.add(e)
+            e.dying = true
+            e.dyingStart = ts
+            g.score += 25
+            g.kills += 1
+            criarFragmentos(e.x, e.y)
+          }
+        })
+        g.enemyBullets.forEach((b) => {
+          if (!b.dead && dist(b, g.ship) < g.bombWave.radius) b.dead = true
+        })
+        g.asteroids = g.asteroids.filter((a) => !a.dead)
+        g.enemyBullets = g.enemyBullets.filter((b) => !b.dead)
+        if (g.bombWave.radius > 700) g.bombWave = null
+      }
 
       // Colisão: nave x asteroide/inimigo/tiro inimigo
       const invencivel = ts < g.invincibleUntil
@@ -418,7 +462,7 @@ export default function Minigame() {
         ctx.shadowBlur = 0
       })
       g.powerups.forEach((p) => {
-        const cor = p.tipo === 'escudo' ? '#4fce7a' : p.tipo === 'triplo' ? '#4fe3ff' : '#e2716f'
+        const cor = p.tipo === 'escudo' ? '#4fce7a' : p.tipo === 'triplo' ? '#4fe3ff' : '#e0d15a'
         ctx.beginPath()
         ctx.arc(p.x, p.y, 11, 0, Math.PI * 2)
         ctx.fillStyle = '#171512'
@@ -430,18 +474,43 @@ export default function Minigame() {
         ctx.stroke()
         ctx.shadowBlur = 0
         ctx.fillStyle = cor
-        ctx.font = '9px sans-serif'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(p.tipo === 'escudo' ? 'E' : p.tipo === 'triplo' ? 'T' : 'B', p.x, p.y + 1)
+
+        if (p.tipo === 'escudo') {
+          ctx.beginPath()
+          ctx.moveTo(p.x, p.y - 6)
+          ctx.lineTo(p.x + 4.5, p.y - 3.5)
+          ctx.lineTo(p.x + 4.5, p.y + 1.5)
+          ctx.quadraticCurveTo(p.x + 4.5, p.y + 5, p.x, p.y + 6.5)
+          ctx.quadraticCurveTo(p.x - 4.5, p.y + 5, p.x - 4.5, p.y + 1.5)
+          ctx.lineTo(p.x - 4.5, p.y - 3.5)
+          ctx.closePath()
+          ctx.fill()
+        } else if (p.tipo === 'bomba') {
+          ctx.beginPath()
+          ctx.moveTo(p.x + 1.5, p.y - 7)
+          ctx.lineTo(p.x - 4, p.y + 1)
+          ctx.lineTo(p.x - 0.5, p.y + 1)
+          ctx.lineTo(p.x - 2, p.y + 7)
+          ctx.lineTo(p.x + 4.5, p.y - 2)
+          ctx.lineTo(p.x + 1, p.y - 2)
+          ctx.closePath()
+          ctx.fill()
+        } else {
+          ctx.font = '9px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText('T', p.x, p.y + 1)
+        }
       })
 
       if (shipVisible && g.lives > 0) {
         const piscando = ts < g.invincibleUntil && Math.floor(ts / 100) % 2 === 0
         if (!piscando) {
+          const launchOffset = g.shipLaunch ? (ts - g.transitionStart - 1300) * 0.35 : 0
+          const shipY = g.ship.y - Math.max(0, launchOffset)
           if (ts < g.shieldUntil) {
             ctx.beginPath()
-            ctx.arc(g.ship.x, g.ship.y, SHIP_R + 8, 0, Math.PI * 2)
+            ctx.arc(g.ship.x, shipY, SHIP_R + 8, 0, Math.PI * 2)
             ctx.strokeStyle = '#4fce7a'
             ctx.lineWidth = 2
             ctx.shadowColor = '#4fce7a'
@@ -449,12 +518,24 @@ export default function Minigame() {
             ctx.stroke()
             ctx.shadowBlur = 0
           }
-          const launchOffset = g.shipLaunch ? (ts - g.transitionStart - 1300) * 0.35 : 0
-          drawIcon(ctx, SHIP_BODY_PATH, g.ship.x, g.ship.y - Math.max(0, launchOffset), 34, '#f5f5f3', true)
+          drawIcon(ctx, SHIP_BODY_PATH, g.ship.x, shipY, 34, '#f5f5f3', true)
           ctx.globalCompositeOperation = 'destination-out'
-          drawIcon(ctx, SHIP_NOTCH_PATH, g.ship.x, g.ship.y - Math.max(0, launchOffset), 34, '#000', false)
+          drawIcon(ctx, SHIP_NOTCH_PATH, g.ship.x, shipY, 34, '#000', false)
           ctx.globalCompositeOperation = 'source-over'
         }
+      }
+
+      if (g.bombWave) {
+        ctx.beginPath()
+        ctx.arc(g.ship.x, g.ship.y, g.bombWave.radius, 0, Math.PI * 2)
+        ctx.strokeStyle = '#e0d15a'
+        ctx.lineWidth = 4
+        ctx.globalAlpha = Math.max(1 - g.bombWave.radius / 700, 0)
+        ctx.shadowColor = '#e0d15a'
+        ctx.shadowBlur = 16
+        ctx.stroke()
+        ctx.shadowBlur = 0
+        ctx.globalAlpha = 1
       }
 
       if (g.transitioning && g.transitionPhase === 'levelText') {
@@ -546,6 +627,19 @@ export default function Minigame() {
               ))}
             </div>
           </div>
+        )}
+
+        {status === 'playing' && hud.bombs > 0 && (
+          <button
+            onClick={ativarBomba}
+            className="absolute bottom-4 right-4 w-12 h-12 rounded-full flex flex-col items-center justify-center"
+            style={{ background: '#171512', border: '1.5px solid #e0d15a', boxShadow: '0 0 10px 1px rgba(224,209,90,0.5)' }}
+          >
+            <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, color: '#e0d15a' }}>
+              <path fill="currentColor" d="M13 2L3 14h7l-1 8 10-12h-7z" />
+            </svg>
+            <span style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 7, color: '#e0d15a', marginTop: 1 }}>{hud.bombs}</span>
+          </button>
         )}
 
         {status === 'start' && (
