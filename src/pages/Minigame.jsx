@@ -228,7 +228,17 @@ export default function Minigame() {
 
       // Inimigos + tiro mirado
       g.enemies.forEach((e) => {
-        e.y += e.speed
+        if (e.y < H / 2) {
+          e.y += e.speed
+        } else {
+          // Chegou na linha de parada -- passa a flutuar em vez de travar
+          if (e.floatBaseX === undefined) {
+            e.floatBaseX = e.x
+            e.floatSeed = Math.random() * Math.PI * 2
+          }
+          e.x = e.floatBaseX + Math.sin(ts / 650 + e.floatSeed) * 16
+          e.y = H / 2 + Math.sin(ts / 950 + e.floatSeed) * 7
+        }
         if (!g.transitioning && !e.dying && ts - e.lastFire > 1900 && e.y > 0 && e.y < H - 40) {
           e.lastFire = ts
           const dx = g.ship.x - e.x
@@ -266,6 +276,7 @@ export default function Minigame() {
               e.dyingStart = ts
               g.score += 25
               g.kills += 1
+              criarFragmentos(e.x, e.y)
               tentarDropPowerup(e.x, e.y)
             }
           }
@@ -312,12 +323,20 @@ export default function Minigame() {
       g.powerups = g.powerups.filter((p) => !p.dead)
 
       // Colisão: nave x asteroide/inimigo/tiro inimigo
-      const protegido = ts < g.invincibleUntil || ts < g.shieldUntil
-      if (!protegido && !g.transitioning) {
+      const invencivel = ts < g.invincibleUntil
+      if (!invencivel && !g.transitioning) {
+        // O escudo é uma barreira: s\u00f3 absorve tiros inimigos, n\u00e3o bloqueia colis\u00e3o f\u00edsica
+        const escudoAtivo = ts < g.shieldUntil
+        if (escudoAtivo) {
+          g.enemyBullets.forEach((b) => {
+            if (!b.dead && dist(b, g.ship) < SHIP_R + 7) b.dead = true
+          })
+        }
+
         let atingido = false
         g.asteroids.forEach((a) => { if (dist(a, g.ship) < a.r + SHIP_R - 6) { a.dead = true; atingido = true } })
         g.enemies.forEach((e) => { if (!e.dying && dist(e, g.ship) < e.r + SHIP_R - 6) { e.dead = true; atingido = true } })
-        g.enemyBullets.forEach((b) => { if (dist(b, g.ship) < SHIP_R - 4) { b.dead = true; atingido = true } })
+        g.enemyBullets.forEach((b) => { if (!b.dead && dist(b, g.ship) < SHIP_R - 4) { b.dead = true; atingido = true } })
         if (atingido) {
           g.lives -= 1
           g.invincibleUntil = ts + INVINCIBILITY_DURATION
@@ -336,6 +355,8 @@ export default function Minigame() {
             setStatus('gameover')
             return
           }
+        } else {
+          g.enemyBullets = g.enemyBullets.filter((b) => !b.dead)
         }
       }
 
