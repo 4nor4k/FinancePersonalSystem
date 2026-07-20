@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconPlus, IconBold, IconItalic, IconUnderline, IconList, IconTrash } from '@tabler/icons-react'
+import {
+  IconChevronLeft, IconPlus, IconBold, IconItalic, IconUnderline, IconStrikethrough,
+  IconList, IconListNumbers, IconH1, IconH2, IconQuote, IconTrash, IconArrowBackUp,
+} from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { stripHtml } from '../lib/format'
 
@@ -26,9 +29,10 @@ export default function Notas() {
     setAbertaId(nova.id)
   }
 
-  function handleFormatar(comando) {
-    document.execCommand(comando)
+  function handleFormatar(comando, valor) {
+    document.execCommand(comando, false, valor)
     editorRef.current?.focus()
+    handleInput()
   }
 
   function handleInput() {
@@ -39,6 +43,15 @@ export default function Notas() {
   if (notaAberta) {
     return (
       <div className="max-w-md mx-auto px-4 pt-4 pb-6">
+        <style>{`
+          .editor-nota ul { list-style: disc; padding-left: 1.4em; margin: 0.4em 0; }
+          .editor-nota ol { list-style: decimal; padding-left: 1.4em; margin: 0.4em 0; }
+          .editor-nota li { margin: 0.15em 0; }
+          .editor-nota h1 { font-size: 1.25em; font-weight: 600; margin: 0.5em 0 0.3em; }
+          .editor-nota h2 { font-size: 1.1em; font-weight: 600; margin: 0.5em 0 0.3em; }
+          .editor-nota blockquote { border-left: 2px solid var(--accent-color); padding-left: 0.8em; margin: 0.5em 0; color: #8a8a87; }
+        `}</style>
+
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => setAbertaId(null)} className="text-text-secondary">
             <IconChevronLeft size={20} />
@@ -61,15 +74,23 @@ export default function Notas() {
           contentEditable
           suppressContentEditableWarning
           onInput={handleInput}
-          className="bg-bg-card rounded-xl p-3.5 min-h-[260px] text-sm leading-relaxed outline-none mb-3"
+          className="editor-nota bg-bg-card rounded-xl p-3.5 min-h-[280px] text-sm leading-relaxed outline-none mb-3"
         />
 
-        <div className="flex items-center gap-1.5 bg-bg-card rounded-xl p-2.5">
+        <div className="flex items-center gap-1 bg-bg-card rounded-xl p-2 flex-wrap">
           <ToolbarBtn icon={IconBold} onClick={() => handleFormatar('bold')} />
           <ToolbarBtn icon={IconItalic} onClick={() => handleFormatar('italic')} />
           <ToolbarBtn icon={IconUnderline} onClick={() => handleFormatar('underline')} />
-          <span className="w-px h-5 bg-bg-raised mx-1" />
+          <ToolbarBtn icon={IconStrikethrough} onClick={() => handleFormatar('strikeThrough')} />
+          <span className="w-px h-5 bg-bg-raised mx-0.5" />
+          <ToolbarBtn icon={IconH1} onClick={() => handleFormatar('formatBlock', '<h1>')} />
+          <ToolbarBtn icon={IconH2} onClick={() => handleFormatar('formatBlock', '<h2>')} />
+          <ToolbarBtn icon={IconQuote} onClick={() => handleFormatar('formatBlock', '<blockquote>')} />
+          <span className="w-px h-5 bg-bg-raised mx-0.5" />
           <ToolbarBtn icon={IconList} onClick={() => handleFormatar('insertUnorderedList')} />
+          <ToolbarBtn icon={IconListNumbers} onClick={() => handleFormatar('insertOrderedList')} />
+          <span className="w-px h-5 bg-bg-raised mx-0.5" />
+          <ToolbarBtn icon={IconArrowBackUp} onClick={() => handleFormatar('undo')} />
         </div>
       </div>
     )
@@ -119,9 +140,9 @@ function ToolbarBtn({ icon: Icon, onClick }) {
     <button
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className="w-8.5 h-8.5 rounded-lg flex items-center justify-center text-text-primary hover:bg-bg-raised"
+      className="w-8 h-8 rounded-lg flex items-center justify-center text-text-primary hover:bg-bg-raised flex-shrink-0"
     >
-      <Icon size={16} />
+      <Icon size={15} />
     </button>
   )
 }

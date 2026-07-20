@@ -9,7 +9,7 @@ const SHIP_R = 15
 const BULLET_SPEED = 6.5
 const ENEMY_BULLET_SPEED = 3.2
 const PLAYER_FIRE_INTERVAL = 260
-const LEVEL_KILL_THRESHOLD = 20
+const LEVEL_KILL_THRESHOLD = 35
 const POWERUP_DROP_CHANCE = 0.16
 const POWERUP_DURATION = 10000
 const INVINCIBILITY_DURATION = 1500
@@ -249,9 +249,10 @@ export default function Minigame() {
             e.floatSeed = Math.random() * Math.PI * 2
             e.arrivedAt = ts
           }
-          const entrada = Math.min((ts - e.arrivedAt) / 700, 1)
-          e.x = e.floatBaseX + Math.sin(ts / 900 + e.floatSeed) * 20 * entrada
-          e.y = H / 2 + Math.sin(ts / 1300 + e.floatSeed) * 9 * entrada
+          const decorrido = ts - e.arrivedAt
+          const entrada = Math.min(decorrido / 700, 1)
+          e.x = e.floatBaseX + Math.sin(decorrido / 900 + e.floatSeed) * 20 * entrada
+          e.y = H / 2 + Math.sin(decorrido / 1300 + e.floatSeed) * 9 * entrada
         }
         if (!g.transitioning && !e.dying && ts - e.lastFire > 1900 && e.y > 0 && e.y < H - 40) {
           e.lastFire = ts
@@ -387,17 +388,12 @@ export default function Minigame() {
           g.asteroids = g.asteroids.filter((a) => !a.dead)
           g.enemies = g.enemies.filter((e) => !e.dead)
           g.enemyBullets = g.enemyBullets.filter((b) => !b.dead)
-          setHud((h) => ({ ...h, lives: g.lives }))
+          setHud((h) => ({ ...h, lives: g.lives, justLostIndex: g.lives, blinkToken: (h.blinkToken || 0) + 1 }))
           if (g.lives <= 0) {
-            g.running = false
-            const recordeAnterior = Number(localStorage.getItem(HIGHSCORE_KEY)) || 0
-            const novoRecorde = g.score > recordeAnterior
-            if (novoRecorde) localStorage.setItem(HIGHSCORE_KEY, String(g.score))
-            setFinalScore(g.score)
-            setHighScore(novoRecorde ? g.score : recordeAnterior)
-            setIsNewRecord(novoRecorde)
-            setStatus('gameover')
-            return
+            g.shipExploding = true
+            g.shipExplodeAt = ts
+            criarFragmentos(g.ship.x, g.ship.y)
+            criarFragmentos(g.ship.x, g.ship.y)
           }
         } else {
           g.enemyBullets = g.enemyBullets.filter((b) => !b.dead)
@@ -405,14 +401,27 @@ export default function Minigame() {
       }
 
       // Pontuação por tempo vivo
-      if (ts - g.lastSecondTick > 1000 && !g.transitioning) {
+      if (ts - g.lastSecondTick > 1000 && !g.transitioning && !g.shipExploding) {
         g.lastSecondTick = ts
         g.score += 1
       }
 
       // Avançar de nível
-      if (!g.transitioning && g.kills >= g.level * LEVEL_KILL_THRESHOLD) {
+      if (!g.transitioning && !g.shipExploding && g.kills >= g.level * LEVEL_KILL_THRESHOLD) {
         iniciarTransicaoNivel(ts)
+      }
+
+      // Ap\u00f3s a explos\u00e3o da nave, finaliza o Game Over
+      if (g.shipExploding && ts - g.shipExplodeAt > 800) {
+        g.running = false
+        const recordeAnterior = Number(localStorage.getItem(HIGHSCORE_KEY)) || 0
+        const novoRecorde = g.score > recordeAnterior
+        if (novoRecorde) localStorage.setItem(HIGHSCORE_KEY, String(g.score))
+        setFinalScore(g.score)
+        setHighScore(novoRecorde ? g.score : recordeAnterior)
+        setIsNewRecord(novoRecorde)
+        setStatus('gameover')
+        return
       }
 
       setHud((h) => (h.score !== g.score ? { ...h, score: g.score } : h))
@@ -503,7 +512,7 @@ export default function Minigame() {
         }
       })
 
-      if (shipVisible && g.lives > 0) {
+      if (shipVisible && g.lives > 0 && !g.shipExploding) {
         const piscando = ts < g.invincibleUntil && Math.floor(ts / 100) % 2 === 0
         if (!piscando) {
           const launchOffset = g.shipLaunch ? (ts - g.transitionStart - 1300) * 0.35 : 0
@@ -582,7 +591,7 @@ export default function Minigame() {
         <button onClick={() => navigate(-1)} className="text-text-secondary">
           <IconChevronLeft size={20} />
         </button>
-        <span className="text-sm font-medium">Minigame</span>
+        <span className="text-sm font-medium">SpaceExplorer</span>
         {status === 'playing' || status === 'paused' ? (
           <button onClick={togglePausa} className="text-text-secondary">
             {status === 'paused' ? <IconPlayerPlay size={18} /> : <IconPlayerPause size={18} />}
@@ -620,8 +629,18 @@ export default function Minigame() {
               </div>
             </div>
             <div className="flex gap-1.5">
+              <style>{'@keyframes heartBlink { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.15; transform: scale(1.3); } }'}</style>
               {[0, 1, 2].map((i) => (
-                <svg key={i} viewBox="0 0 24 24" style={{ width: 15, height: 15, color: i < hud.lives ? '#ff4655' : '#2e2e33' }}>
+                <svg
+                  key={i === hud.justLostIndex ? `blink-${hud.blinkToken}` : i}
+                  viewBox="0 0 24 24"
+                  style={{
+                    width: 15,
+                    height: 15,
+                    color: i < hud.lives ? '#ff4655' : '#2e2e33',
+                    animation: i === hud.justLostIndex ? 'heartBlink 0.16s ease-in-out 4' : 'none',
+                  }}
+                >
                   <path fill="currentColor" d={HEART_PATH.d} />
                 </svg>
               ))}
@@ -647,7 +666,7 @@ export default function Minigame() {
             <svg viewBox="0 0 48 48" style={{ width: 44, height: 44, color: '#f5f5f3', marginBottom: 16 }}>
               <path fill="currentColor" d={SHIP_PATH.body} />
             </svg>
-            <p style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 13, color: '#f5f5f3', marginBottom: 10 }}>ESPAÇO</p>
+            <p style={{ fontFamily: '"Press Start 2P", monospace', fontSize: 13, color: '#f5f5f3', marginBottom: 10 }}>SPACE EXPLORER</p>
             <p className="text-xs text-text-secondary mb-1">Arraste o dedo pra mover a nave</p>
             <p className="text-xs text-text-secondary mb-6">Tiro automático. Desvie e destrua!</p>
             {highScore > 0 && (
