@@ -1,4 +1,4 @@
-# Financeiro
+# Sistema Financeiro Pessoal
 
 App de controle financeiro pessoal e empresarial (dois ou mais perfis
 independentes, mesmo app), com objetivos de economia, cotações da bolsa,
@@ -9,10 +9,10 @@ por perfil.
 React + Vite no front, Supabase (Postgres + Auth) como banco, deploy na
 Vercel.
 
-> ⚠️ **Disclaimer**: este aplicativo foi inteiramente desenhado e projetado
-> por **4nor4k**, e desenvolvido com o **Claude Code**. Toda a arquitetura,
-> as decisões de produto e o design visual partiram do 4nor4k; o Claude Code
-> foi usado como ferramenta de implementação ao longo do processo.
+> ⚠️ **Disclaimer**: este aplicativo foi desenhado e projetado
+> por **4nor4k**, e desenvolvido com o **Claude Code**.
+> Todas as decisões de produto e o design visual partiram de mim; o Claude Code
+> foi usado como ferramenta de implementação e programação ao longo do processo.
 
 ---
 
