@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconPlus, IconPhoto, IconPhotoPlus, IconX, IconTrash, IconShoppingBag } from '@tabler/icons-react'
+import { IconChevronLeft, IconPlus, IconPhoto, IconPhotoPlus, IconX, IconTrash, IconShoppingBag, IconExternalLink } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber } from '../lib/format'
 import PickerField from '../components/PickerField'
@@ -63,6 +63,16 @@ export default function Wishlist() {
                   <div className="w-full h-full flex items-center justify-center">
                     <IconPhoto size={26} className="text-text-muted" />
                   </div>
+                )}
+                {item.link_produto && (
+                  <a
+                    href={item.link_produto}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/55 flex items-center justify-center"
+                  >
+                    <IconExternalLink size={13} color="#e5e5e3" />
+                  </a>
                 )}
                 <button
                   onClick={() => deleteWishlistItem(item.id)}
