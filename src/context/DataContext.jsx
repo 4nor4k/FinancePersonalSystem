@@ -505,6 +505,17 @@ export function DataProvider({ children }) {
     [isDemo, activeProfileId]
   )
 
+  const updateWishlistItem = useCallback(
+    async (id, patch) => {
+      setWishlist((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)))
+      if (!isDemo) {
+        const { error } = await supabase.from('wishlist_itens').update(patch).eq('id', id)
+        reportError(error, 'atualizar item da lista de desejos')
+      }
+    },
+    [isDemo]
+  )
+
   const deleteWishlistItem = useCallback(
     async (id) => {
       setWishlist((prev) => prev.filter((w) => w.id !== id))
@@ -659,6 +670,7 @@ export function DataProvider({ children }) {
     deleteNota,
     wishlist: wishlist.filter((w) => w.perfil_id === activeProfileId),
     addWishlistItem,
+    updateWishlistItem,
     deleteWishlistItem,
     comprarWishlistItem,
     objetivos: objetivos.filter((o) => o.perfil_id === activeProfileId),

@@ -1,29 +1,51 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconPlus, IconPhoto, IconPhotoPlus, IconX, IconTrash, IconShoppingBag, IconExternalLink } from '@tabler/icons-react'
+import { IconChevronLeft, IconPlus, IconPhoto, IconPhotoPlus, IconX, IconTrash, IconShoppingBag, IconExternalLink, IconEdit } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
-import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber } from '../lib/format'
+import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCurrencyDisplay } from '../lib/format'
 import PickerField from '../components/PickerField'
+
+const FORM_VAZIO = { nome: '', preco: '', link_produto: '', link_imagem: '', meta_data: '' }
 
 export default function Wishlist() {
   const navigate = useNavigate()
-  const { wishlist, categorias, contas, addWishlistItem, deleteWishlistItem, comprarWishlistItem } = useData()
-  const [criando, setCriando] = useState(false)
+  const { wishlist, categorias, contas, addWishlistItem, updateWishlistItem, deleteWishlistItem, comprarWishlistItem } = useData()
+  const [editandoId, setEditandoId] = useState(null) // null = fechado, 'novo' = criando, id = editando
   const [comprando, setComprando] = useState(null)
-  const [form, setForm] = useState({ nome: '', preco: '', link_produto: '', link_imagem: '', meta_data: '' })
+  const [form, setForm] = useState(FORM_VAZIO)
   const [compraForm, setCompraForm] = useState({ conta_id: '', categoria_id: '' })
 
-  async function handleAdicionar() {
+  function abrirCriar() {
+    setForm(FORM_VAZIO)
+    setEditandoId('novo')
+  }
+
+  function abrirEditar(item) {
+    setForm({
+      nome: item.nome || '',
+      preco: numberToCurrencyDisplay(item.preco),
+      link_produto: item.link_produto || '',
+      link_imagem: item.link_imagem || '',
+      meta_data: item.meta_data || '',
+    })
+    setEditandoId(item.id)
+  }
+
+  async function handleSalvar() {
     if (!form.nome.trim()) return
-    await addWishlistItem({
+    const payload = {
       nome: form.nome,
       preco: currencyDisplayToNumber(form.preco),
       link_produto: form.link_produto,
       link_imagem: form.link_imagem,
       meta_data: form.meta_data || null,
-    })
-    setForm({ nome: '', preco: '', link_produto: '', link_imagem: '', meta_data: '' })
-    setCriando(false)
+    }
+    if (editandoId === 'novo') {
+      await addWishlistItem(payload)
+    } else {
+      await updateWishlistItem(editandoId, payload)
+    }
+    setEditandoId(null)
   }
 
   async function handleComprar() {
@@ -46,7 +68,7 @@ export default function Wishlist() {
           <IconChevronLeft size={20} />
         </button>
         <span className="text-sm font-medium">Lista de desejos</span>
-        <button onClick={() => setCriando(true)} style={{ color: 'var(--accent-color)' }}>
+        <button onClick={abrirCriar} style={{ color: 'var(--accent-color)' }}>
           <IconPlus size={20} />
         </button>
       </div>
@@ -64,16 +86,24 @@ export default function Wishlist() {
                     <IconPhoto size={26} className="text-text-muted" />
                   </div>
                 )}
-                {item.link_produto && (
-                  <a
-                    href={item.link_produto}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/55 flex items-center justify-center"
+                <div className="absolute top-2 left-2 flex gap-1.5">
+                  {item.link_produto && (
+                    <a
+                      href={item.link_produto}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-7 h-7 rounded-full bg-black/55 flex items-center justify-center"
+                    >
+                      <IconExternalLink size={13} color="#e5e5e3" />
+                    </a>
+                  )}
+                  <button
+                    onClick={() => abrirEditar(item)}
+                    className="w-7 h-7 rounded-full bg-black/55 flex items-center justify-center"
                   >
-                    <IconExternalLink size={13} color="#e5e5e3" />
-                  </a>
-                )}
+                    <IconEdit size={13} color="#e5e5e3" />
+                  </button>
+                </div>
                 <button
                   onClick={() => deleteWishlistItem(item.id)}
                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/55 flex items-center justify-center"
@@ -107,12 +137,12 @@ export default function Wishlist() {
         )}
       </div>
 
-      {criando && (
-        <Overlay onClose={() => setCriando(false)}>
-          <p className="text-sm font-medium text-center mb-4">Novo desejo</p>
-          <div className="w-full h-24 bg-bg-raised rounded-xl mb-3.5 flex flex-col items-center justify-center gap-1.5">
+      {editandoId && (
+        <Overlay onClose={() => setEditandoId(null)}>
+          <p className="text-sm font-medium text-center mb-4">{editandoId === 'novo' ? 'Novo desejo' : 'Editar desejo'}</p>
+          <div className="w-full h-24 bg-bg-raised rounded-xl mb-3.5 flex flex-col items-center justify-center gap-1.5 overflow-hidden">
             {form.link_imagem ? (
-              <img src={form.link_imagem} className="w-full h-full object-cover rounded-xl" />
+              <img src={form.link_imagem} className="w-full h-full object-cover" />
             ) : (
               <>
                 <IconPhotoPlus size={22} className="text-text-muted" />
@@ -128,8 +158,8 @@ export default function Wishlist() {
             <p className="text-[11px] text-text-muted mb-1.5">Meta de compra</p>
             <input type="date" value={form.meta_data} onChange={(e) => setForm((f) => ({ ...f, meta_data: e.target.value }))} className="w-full bg-bg-raised rounded-lg px-3 py-3 text-sm outline-none" />
           </div>
-          <button onClick={handleAdicionar} className="w-full rounded-lg py-3 text-sm font-medium" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
-            Adicionar à lista
+          <button onClick={handleSalvar} className="w-full rounded-lg py-3 text-sm font-medium" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
+            {editandoId === 'novo' ? 'Adicionar à lista' : 'Salvar alterações'}
           </button>
         </Overlay>
       )}
