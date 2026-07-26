@@ -144,14 +144,22 @@ export default function Transacoes() {
           return (
             <SwipeableRow key={t.id} actions={acoes}>
               <div className="relative p-3 pl-4 flex items-center justify-between">
-                <span
-                  className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1 rounded-full"
-                  style={{
-                    height: '60%',
-                    background: t.tipo === 'despesa' ? '#e2716f' : '#7fd88f',
-                    boxShadow: `0 0 8px 1px ${t.tipo === 'despesa' ? 'rgba(226,113,111,0.65)' : 'rgba(127,216,143,0.65)'}`,
-                  }}
-                />
+                <div className="absolute left-1.5 top-1/2 -translate-y-1/2 flex flex-col gap-0.5" style={{ height: '60%', width: 4 }}>
+                  <span
+                    className="flex-1 rounded-full"
+                    style={{
+                      background: t.tipo === 'despesa' ? '#e2716f' : '#7fd88f',
+                      boxShadow: `0 0 8px 1px ${t.tipo === 'despesa' ? 'rgba(226,113,111,0.65)' : 'rgba(127,216,143,0.65)'}`,
+                    }}
+                  />
+                  <span
+                    className="flex-1 rounded-full"
+                    style={{
+                      background: cat?.cor || '#5c5c59',
+                      boxShadow: `0 0 8px 1px ${cat?.cor ? `${cat.cor}a6` : 'rgba(92,92,89,0.65)'}`,
+                    }}
+                  />
+                </div>
                 <div>
                   <p className="text-sm">
                     {t.anotacao || cat?.nome || 'Sem categoria'}
