@@ -86,7 +86,6 @@ export default function Login() {
         />
         <input
           type="password"
-          inputMode="numeric"
           required
           placeholder="Senha"
           value={senha}

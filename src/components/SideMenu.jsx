@@ -72,7 +72,12 @@ export default function SideMenu({ onClose }) {
 
   async function salvarEdicao() {
     if (!editando.nome.trim()) return
-    await updateProfile(editando.id, { nome: editando.nome, cor: editando.cor, cor_bg: editando.cor + '22' })
+    await updateProfile(editando.id, {
+      nome: editando.nome,
+      cor: editando.cor,
+      cor_bg: editando.cor + '22',
+      ocultar_extras: editando.ocultar_extras,
+    })
     setEditando(null)
   }
 
@@ -192,6 +197,21 @@ export default function SideMenu({ onClose }) {
           <p className="text-[11px] text-text-muted mb-1.5">Cor de destaque</p>
           <p className="text-[10px] text-text-muted mb-3">Muda o tema do app inteiro quando esse perfil está ativo</p>
           <ColorPicker value={editando.cor} onChange={(cor) => setEditando({ ...editando, cor })} />
+          <button
+            onClick={() => setEditando({ ...editando, ocultar_extras: !editando.ocultar_extras })}
+            className="w-full flex items-center justify-between mt-4"
+          >
+            <div className="text-left">
+              <span className="text-xs block">Perfil discreto</span>
+              <span className="text-[10px] text-text-muted">Esconde cotações e lista de desejos no dashboard</span>
+            </div>
+            <div className="w-9 h-5 rounded-full relative flex-shrink-0" style={{ background: editando.ocultar_extras ? 'var(--accent-bg)' : '#1a1a1a' }}>
+              <div
+                className="w-4 h-4 rounded-full absolute top-0.5 transition-all"
+                style={{ background: editando.ocultar_extras ? 'var(--accent-color)' : '#5c5c59', left: editando.ocultar_extras ? 18 : 2 }}
+              />
+            </div>
+          </button>
           <button onClick={salvarEdicao} className="w-full rounded-lg py-3 text-sm font-medium mt-4" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
             Salvar
           </button>

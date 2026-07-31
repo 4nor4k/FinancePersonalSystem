@@ -12,13 +12,13 @@ export default function SwipeableRow({ children, actions }) {
 
   function onDown(e) {
     dragging.current = true
-    startX.current = e.touches ? e.touches[0].clientX : e.clientX
+    startX.current = e.clientX
     startOffset.current = offset
+    e.currentTarget.setPointerCapture(e.pointerId)
   }
   function onMove(e) {
     if (!dragging.current) return
-    const x = e.touches ? e.touches[0].clientX : e.clientX
-    const delta = x - startX.current
+    const delta = e.clientX - startX.current
     let novo = startOffset.current + delta
     novo = Math.max(-actionsWidth, Math.min(0, novo))
     setOffset(novo)
@@ -47,13 +47,10 @@ export default function SwipeableRow({ children, actions }) {
         ))}
       </div>
       <div
-        onMouseDown={onDown}
-        onMouseMove={onMove}
-        onMouseUp={onUp}
-        onMouseLeave={onUp}
-        onTouchStart={onDown}
-        onTouchMove={onMove}
-        onTouchEnd={onUp}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerCancel={onUp}
         className="relative bg-bg-card"
         style={{ transform: `translateX(${offset}px)`, transition: dragging.current ? 'none' : 'transform 0.2s' }}
       >

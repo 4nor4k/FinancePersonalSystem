@@ -24,7 +24,7 @@ export default function Notas() {
 
   async function handleNova() {
     const nova = await addNota('Nova nota')
-    setAbertaId(nova.id)
+    if (nova) setAbertaId(nova.id)
   }
 
   if (notaAberta) {
@@ -32,7 +32,7 @@ export default function Notas() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 pb-56">
+    <div className="max-w-md lg:max-w-3xl mx-auto px-4 pt-4 pb-56 lg:px-9 lg:pt-7 lg:pb-10">
       <div className="flex items-center justify-between mb-4">
         <button onClick={() => navigate(-1)} className="text-text-secondary">
           <IconChevronLeft size={20} />
@@ -107,7 +107,7 @@ function EditorNota({ nota, onVoltar, onUpdate, onDelete }) {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 pb-6">
+    <div className="max-w-md lg:max-w-2xl mx-auto px-4 pt-4 pb-6 lg:px-9 lg:pt-7">
       <style>{`
         .ProseMirror { outline: none; }
         .ProseMirror p.is-editor-empty:first-child::before {

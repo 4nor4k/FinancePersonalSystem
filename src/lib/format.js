@@ -28,3 +28,14 @@ export function numberToCurrencyDisplay(num) {
   if (!num && num !== 0) return ''
   return Number(num).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
+
+// Só aceita URLs http/https antes de usar em src/href -- evita protocolos
+// tipo javascript: ou data: em links colados pelo próprio usuário.
+export function isUrlSegura(url) {
+  if (!url) return false
+  try {
+    return ['http:', 'https:'].includes(new URL(url).protocol)
+  } catch {
+    return false
+  }
+}

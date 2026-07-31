@@ -21,7 +21,12 @@ export default function Configuracoes() {
 
   async function salvarEdicao() {
     if (!editando.nome.trim()) return
-    await updateProfile(editando.id, { nome: editando.nome, cor: editando.cor, cor_bg: editando.cor + '22' })
+    await updateProfile(editando.id, {
+      nome: editando.nome,
+      cor: editando.cor,
+      cor_bg: editando.cor + '22',
+      ocultar_extras: editando.ocultar_extras,
+    })
     setEditando(null)
   }
 
@@ -41,7 +46,7 @@ export default function Configuracoes() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 pb-28">
+    <div className="max-w-md lg:max-w-2xl mx-auto px-4 pt-4 pb-28 lg:px-9 lg:pt-7 lg:pb-10">
       <div className="flex items-center justify-between mb-5">
         <button onClick={() => navigate(-1)} className="text-text-secondary">
           <IconChevronLeft size={20} />
@@ -114,6 +119,21 @@ export default function Configuracoes() {
               />
             ))}
           </div>
+          <button
+            onClick={() => setEditando({ ...editando, ocultar_extras: !editando.ocultar_extras })}
+            className="w-full flex items-center justify-between mb-5"
+          >
+            <div className="text-left">
+              <span className="text-xs block">Perfil discreto</span>
+              <span className="text-[10px] text-text-muted">Esconde cotações e lista de desejos no dashboard</span>
+            </div>
+            <div className="w-9 h-5 rounded-full relative flex-shrink-0" style={{ background: editando.ocultar_extras ? 'var(--accent-bg)' : '#1a1a1a' }}>
+              <div
+                className="w-4 h-4 rounded-full absolute top-0.5 transition-all"
+                style={{ background: editando.ocultar_extras ? 'var(--accent-color)' : '#5c5c59', left: editando.ocultar_extras ? 18 : 2 }}
+              />
+            </div>
+          </button>
           <button onClick={salvarEdicao} className="w-full rounded-lg py-3 text-sm font-medium" style={{ background: '#e5e5e3', color: '#0a0a0a' }}>
             Salvar
           </button>

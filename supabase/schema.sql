@@ -10,6 +10,7 @@ create table perfis (
   nome text not null,
   cor text not null default '#ff8a3d',
   cor_bg text not null default '#2e1c10',
+  ocultar_extras boolean not null default false,
   criado_em timestamptz not null default now()
 );
 

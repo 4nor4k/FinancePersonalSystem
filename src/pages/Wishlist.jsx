@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconChevronLeft, IconPlus, IconPhoto, IconPhotoPlus, IconX, IconTrash, IconShoppingBag, IconExternalLink, IconEdit } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
-import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCurrencyDisplay } from '../lib/format'
+import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCurrencyDisplay, isUrlSegura } from '../lib/format'
 import PickerField from '../components/PickerField'
 
 const FORM_VAZIO = { nome: '', preco: '', link_produto: '', link_imagem: '', meta_data: '' }
@@ -62,7 +62,7 @@ export default function Wishlist() {
   const hoje = new Date().toISOString().slice(0, 10)
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 pb-56">
+    <div className="max-w-md lg:max-w-3xl mx-auto px-4 pt-4 pb-56 lg:px-9 lg:pt-7 lg:pb-10">
       <div className="flex items-center justify-between mb-4">
         <button onClick={() => navigate(-1)} className="text-text-secondary">
           <IconChevronLeft size={20} />
@@ -79,7 +79,7 @@ export default function Wishlist() {
           return (
             <div key={item.id} className="rounded-2xl overflow-hidden" style={{ background: 'var(--card-tone-2)', border: '0.5px solid #2a2620' }}>
               <div className="relative aspect-square bg-bg-raised">
-                {item.link_imagem ? (
+                {isUrlSegura(item.link_imagem) ? (
                   <img src={item.link_imagem} alt={item.nome} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -87,7 +87,7 @@ export default function Wishlist() {
                   </div>
                 )}
                 <div className="absolute top-2 left-2 flex gap-1.5">
-                  {item.link_produto && (
+                  {isUrlSegura(item.link_produto) && (
                     <a
                       href={item.link_produto}
                       target="_blank"
@@ -141,7 +141,7 @@ export default function Wishlist() {
         <Overlay onClose={() => setEditandoId(null)}>
           <p className="text-sm font-medium text-center mb-4">{editandoId === 'novo' ? 'Novo desejo' : 'Editar desejo'}</p>
           <div className="w-full h-24 bg-bg-raised rounded-xl mb-3.5 flex flex-col items-center justify-center gap-1.5 overflow-hidden">
-            {form.link_imagem ? (
+            {isUrlSegura(form.link_imagem) ? (
               <img src={form.link_imagem} className="w-full h-full object-cover" />
             ) : (
               <>

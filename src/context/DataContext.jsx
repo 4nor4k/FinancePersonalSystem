@@ -183,7 +183,7 @@ export function DataProvider({ children }) {
     async (nome, cor = '#f5f5f3') => {
       const cor_bg = cor + '22'
       if (isDemo) {
-        const novo = { id: 'p-' + Date.now(), nome, cor, cor_bg }
+        const novo = { id: 'p-' + Date.now(), nome, cor, cor_bg, ocultar_extras: false }
         setPerfis((prev) => [...prev, novo])
         return novo
       }
@@ -201,13 +201,16 @@ export function DataProvider({ children }) {
 
   const updateProfile = useCallback(
     async (id, patch) => {
+      const anterior = perfis.find((p) => p.id === id)
       setPerfis((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
       if (!isDemo) {
         const { error } = await supabase.from('perfis').update(patch).eq('id', id)
-        reportError(error, 'atualizar perfil')
+        if (reportError(error, 'atualizar perfil') && anterior) {
+          setPerfis((prev) => prev.map((p) => (p.id === id ? anterior : p)))
+        }
       }
     },
-    [isDemo]
+    [isDemo, perfis]
   )
 
   // ---------- Contas ----------
@@ -244,6 +247,7 @@ export function DataProvider({ children }) {
 
   const reordenarContas = useCallback(
     async (idsOrdenados) => {
+      const anterior = contas
       setContas((prev) =>
         prev.map((c) => {
           const novaOrdem = idsOrdenados.indexOf(c.id)
@@ -251,23 +255,28 @@ export function DataProvider({ children }) {
         })
       )
       if (!isDemo) {
-        await Promise.all(
+        const resultados = await Promise.all(
           idsOrdenados.map((id, idx) => supabase.from('contas').update({ ordem: idx }).eq('id', id))
         )
+        const houveErro = resultados.some((r) => reportError(r.error, 'reordenar contas'))
+        if (houveErro) setContas(anterior)
       }
     },
-    [isDemo]
+    [isDemo, contas]
   )
 
   const updateConta = useCallback(
     async (id, patch) => {
+      const anterior = contas.find((c) => c.id === id)
       setContas((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
       if (!isDemo) {
         const { error } = await supabase.from('contas').update(patch).eq('id', id)
-        reportError(error, 'atualizar conta')
+        if (reportError(error, 'atualizar conta') && anterior) {
+          setContas((prev) => prev.map((c) => (c.id === id ? anterior : c)))
+        }
       }
     },
-    [isDemo]
+    [isDemo, contas]
   )
 
   // ---------- Categorias ----------
@@ -292,24 +301,30 @@ export function DataProvider({ children }) {
 
   const updateCategoria = useCallback(
     async (id, patch) => {
+      const anterior = categorias.find((c) => c.id === id)
       setCategorias((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
       if (!isDemo) {
         const { error } = await supabase.from('categorias').update(patch).eq('id', id)
-        reportError(error, 'atualizar categoria')
+        if (reportError(error, 'atualizar categoria') && anterior) {
+          setCategorias((prev) => prev.map((c) => (c.id === id ? anterior : c)))
+        }
       }
     },
-    [isDemo]
+    [isDemo, categorias]
   )
 
   const deleteCategoria = useCallback(
     async (id) => {
+      const anterior = categorias.find((c) => c.id === id)
       setCategorias((prev) => prev.filter((c) => c.id !== id))
       if (!isDemo) {
         const { error } = await supabase.from('categorias').delete().eq('id', id)
-        reportError(error, 'excluir categoria')
+        if (reportError(error, 'excluir categoria') && anterior) {
+          setCategorias((prev) => [...prev, anterior])
+        }
       }
     },
-    [isDemo]
+    [isDemo, categorias]
   )
 
   // ---------- Transações ----------
@@ -404,7 +419,9 @@ export function DataProvider({ children }) {
       setTransacoes((prev) => prev.map((x) => (x.id === id ? { ...x, status: novoStatus } : x)))
       if (!isDemo) {
         const { error } = await supabase.from('transacoes').update({ status: novoStatus }).eq('id', id)
-        reportError(error, 'consolidar transação')
+        if (reportError(error, 'consolidar transação')) {
+          setTransacoes((prev) => prev.map((x) => (x.id === id ? t : x)))
+        }
       }
     },
     [isDemo, transacoes]
@@ -412,13 +429,16 @@ export function DataProvider({ children }) {
 
   const updateTransacao = useCallback(
     async (id, patch) => {
+      const anterior = transacoes.find((x) => x.id === id)
       setTransacoes((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)))
       if (!isDemo) {
         const { error } = await supabase.from('transacoes').update(patch).eq('id', id)
-        reportError(error, 'editar transação')
+        if (reportError(error, 'editar transação') && anterior) {
+          setTransacoes((prev) => prev.map((x) => (x.id === id ? anterior : x)))
+        }
       }
     },
-    [isDemo]
+    [isDemo, transacoes]
   )
 
   const excluirTransacao = useCallback(
@@ -427,13 +447,16 @@ export function DataProvider({ children }) {
       if (!alvo) return
 
       if (modo === 'proximos' && alvo.recorrencia_id) {
-        const idsRemover = transacoes
-          .filter((x) => x.recorrencia_id === alvo.recorrencia_id && x.data >= alvo.data)
-          .map((x) => x.id)
+        const removidas = transacoes.filter(
+          (x) => x.recorrencia_id === alvo.recorrencia_id && x.data >= alvo.data
+        )
+        const idsRemover = removidas.map((x) => x.id)
         setTransacoes((prev) => prev.filter((x) => !idsRemover.includes(x.id)))
         if (!isDemo) {
           const { error } = await supabase.from('transacoes').delete().in('id', idsRemover)
-          reportError(error, 'excluir transações')
+          if (reportError(error, 'excluir transações')) {
+            setTransacoes((prev) => [...prev, ...removidas])
+          }
         }
         return
       }
@@ -441,7 +464,9 @@ export function DataProvider({ children }) {
       setTransacoes((prev) => prev.filter((x) => x.id !== id))
       if (!isDemo) {
         const { error } = await supabase.from('transacoes').delete().eq('id', id)
-        reportError(error, 'excluir transação')
+        if (reportError(error, 'excluir transação')) {
+          setTransacoes((prev) => [...prev, alvo])
+        }
       }
     },
     [isDemo, transacoes]
@@ -465,24 +490,30 @@ export function DataProvider({ children }) {
 
   const updateNota = useCallback(
     async (id, patch) => {
+      const anterior = notas.find((n) => n.id === id)
       setNotas((prev) => prev.map((n) => (n.id === id ? { ...n, ...patch, atualizado_em: new Date().toISOString() } : n)))
       if (!isDemo) {
         const { error } = await supabase.from('notas').update(patch).eq('id', id)
-        reportError(error, 'salvar nota')
+        if (reportError(error, 'salvar nota') && anterior) {
+          setNotas((prev) => prev.map((n) => (n.id === id ? anterior : n)))
+        }
       }
     },
-    [isDemo]
+    [isDemo, notas]
   )
 
   const deleteNota = useCallback(
     async (id) => {
+      const anterior = notas.find((n) => n.id === id)
       setNotas((prev) => prev.filter((n) => n.id !== id))
       if (!isDemo) {
         const { error } = await supabase.from('notas').delete().eq('id', id)
-        reportError(error, 'excluir nota')
+        if (reportError(error, 'excluir nota') && anterior) {
+          setNotas((prev) => [anterior, ...prev])
+        }
       }
     },
-    [isDemo]
+    [isDemo, notas]
   )
 
   // ---------- Wishlist ----------
@@ -507,24 +538,30 @@ export function DataProvider({ children }) {
 
   const updateWishlistItem = useCallback(
     async (id, patch) => {
+      const anterior = wishlist.find((w) => w.id === id)
       setWishlist((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)))
       if (!isDemo) {
         const { error } = await supabase.from('wishlist_itens').update(patch).eq('id', id)
-        reportError(error, 'atualizar item da lista de desejos')
+        if (reportError(error, 'atualizar item da lista de desejos') && anterior) {
+          setWishlist((prev) => prev.map((w) => (w.id === id ? anterior : w)))
+        }
       }
     },
-    [isDemo]
+    [isDemo, wishlist]
   )
 
   const deleteWishlistItem = useCallback(
     async (id) => {
+      const anterior = wishlist.find((w) => w.id === id)
       setWishlist((prev) => prev.filter((w) => w.id !== id))
       if (!isDemo) {
         const { error } = await supabase.from('wishlist_itens').delete().eq('id', id)
-        reportError(error, 'excluir item da lista de desejos')
+        if (reportError(error, 'excluir item da lista de desejos') && anterior) {
+          setWishlist((prev) => [...prev, anterior])
+        }
       }
     },
-    [isDemo]
+    [isDemo, wishlist]
   )
 
   const comprarWishlistItem = useCallback(
@@ -533,7 +570,9 @@ export function DataProvider({ children }) {
       setWishlist((prev) => prev.filter((w) => w.id !== item.id))
       if (!isDemo) {
         const { error } = await supabase.from('wishlist_itens').delete().eq('id', item.id)
-        reportError(error, 'remover item comprado')
+        if (reportError(error, 'remover item comprado')) {
+          setWishlist((prev) => [...prev, item])
+        }
       }
     },
     [isDemo, addTransacao]
@@ -569,24 +608,30 @@ export function DataProvider({ children }) {
 
   const updateObjetivo = useCallback(
     async (id, patch) => {
+      const anterior = objetivos.find((o) => o.id === id)
       setObjetivos((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)))
       if (!isDemo) {
         const { error } = await supabase.from('objetivos').update(patch).eq('id', id)
-        reportError(error, 'atualizar objetivo')
+        if (reportError(error, 'atualizar objetivo') && anterior) {
+          setObjetivos((prev) => prev.map((o) => (o.id === id ? anterior : o)))
+        }
       }
     },
-    [isDemo]
+    [isDemo, objetivos]
   )
 
   const deleteObjetivo = useCallback(
     async (id) => {
+      const anterior = objetivos.find((o) => o.id === id)
       setObjetivos((prev) => prev.filter((o) => o.id !== id))
       if (!isDemo) {
         const { error } = await supabase.from('objetivos').delete().eq('id', id)
-        reportError(error, 'excluir objetivo')
+        if (reportError(error, 'excluir objetivo') && anterior) {
+          setObjetivos((prev) => [...prev, anterior])
+        }
       }
     },
-    [isDemo]
+    [isDemo, objetivos]
   )
 
   // Aportar: soma o valor no progresso do objetivo e, opcionalmente, já
@@ -627,13 +672,16 @@ export function DataProvider({ children }) {
 
   const removeAtivoWatchlist = useCallback(
     async (id) => {
+      const anterior = watchlistAtivos.find((w) => w.id === id)
       setWatchlistAtivos((prev) => prev.filter((w) => w.id !== id))
       if (!isDemo) {
         const { error } = await supabase.from('watchlist_ativos').delete().eq('id', id)
-        reportError(error, 'remover ativo')
+        if (reportError(error, 'remover ativo') && anterior) {
+          setWatchlistAtivos((prev) => [...prev, anterior])
+        }
       }
     },
-    [isDemo]
+    [isDemo, watchlistAtivos]
   )
 
   const value = {
