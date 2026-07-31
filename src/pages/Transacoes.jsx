@@ -277,14 +277,14 @@ export default function Transacoes() {
 
           {/* Lista desktop: tabela com ações reveladas no hover */}
           <div className="hidden lg:block bg-bg-card rounded-2xl overflow-hidden">
-            <div className="grid grid-cols-[20px_1.6fr_1fr_1fr_90px_96px_84px] gap-2.5 px-4 py-3 text-[10px] uppercase tracking-wide text-text-muted border-b border-bg-raised">
+            <div className="grid grid-cols-[20px_1.6fr_1fr_1fr_84px_88px_100px] gap-2.5 px-4 py-3 text-[10px] uppercase tracking-wide text-text-muted border-b border-bg-raised">
               <span />
               <span>Descrição</span>
               <span>Categoria</span>
               <span>Conta</span>
               <span>Data</span>
               <span>Status</span>
-              <span />
+              <span className="text-right">Valor</span>
             </div>
             {linhas.length === 0 && (
               <p className="text-xs text-text-muted text-center py-8">Nenhuma transação nesse mês.</p>
@@ -292,7 +292,7 @@ export default function Transacoes() {
             {linhas.map(({ t, cat, conta, statusLabel, statusColor }) => (
               <div
                 key={t.id}
-                className="group grid grid-cols-[20px_1.6fr_1fr_1fr_90px_96px_84px] gap-2.5 items-center px-4 py-3 border-b border-bg-raised last:border-b-0 hover:bg-bg-raised"
+                className="group relative grid grid-cols-[20px_1.6fr_1fr_1fr_84px_88px_100px] gap-2.5 items-center px-4 py-3 border-b border-bg-raised last:border-b-0 hover:bg-bg-raised"
               >
                 <span className="w-2 h-2 rounded-full" style={{ background: t.tipo === 'despesa' ? '#e2716f' : '#7fd88f' }} />
                 <span className="text-xs truncate">
@@ -310,7 +310,10 @@ export default function Transacoes() {
                     {statusLabel}
                   </span>
                 </span>
-                <span className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100">
+                <span className="text-xs text-right group-hover:opacity-0 transition-opacity">{formatBRL(t.valor)}</span>
+
+                {/* Ações -- aparecem sobre a coluna de valor só no hover */}
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity bg-bg-raised pl-2">
                   {t.status === 'pendente' && (
                     <button
                       onClick={() => consolidarTransacao(t.id)}

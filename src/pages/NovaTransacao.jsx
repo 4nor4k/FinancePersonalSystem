@@ -29,6 +29,7 @@ export default function NovaTransacao() {
   const [modalConta, setModalConta] = useState(false)
   const [modalCategoria, setModalCategoria] = useState(false)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
+  const [confirmandoEdicao, setConfirmandoEdicao] = useState(false)
 
   const categoriasFiltradas = categorias.filter((c) => c.tipo === tipo)
 
@@ -45,31 +46,49 @@ export default function NovaTransacao() {
     }
   }
 
+  function montarPayloadEdicao() {
+    return {
+      tipo,
+      valor: currencyDisplayToNumber(valor),
+      conta_id: contaId,
+      categoria_id: categoriaId || null,
+      data,
+      anotacao,
+    }
+  }
+
   async function handleConfirm() {
     if (!valor || !contaId) return
-    setSalvando(true)
 
     if (transacaoEditando) {
-      await updateTransacao(transacaoEditando.id, {
-        tipo,
-        valor: currencyDisplayToNumber(valor),
-        conta_id: contaId,
-        categoria_id: categoriaId || null,
-        data,
-        anotacao,
-      })
-    } else {
-      await addTransacao({
-        tipo,
-        valor: currencyDisplayToNumber(valor),
-        conta_id: contaId,
-        categoria_id: categoriaId || null,
-        data,
-        anotacao,
-        repetir: repetirAberto ? repetirTipo : null,
-        numeroParcelas: repetirTipo === 'parcelada' ? Number(numeroParcelas) : undefined,
-      })
+      if (transacaoEditando.recorrencia_id) {
+        setConfirmandoEdicao(true)
+        return
+      }
+      setSalvando(true)
+      await updateTransacao(transacaoEditando.id, montarPayloadEdicao())
+      navigate('/transacoes')
+      return
     }
+
+    setSalvando(true)
+    await addTransacao({
+      tipo,
+      valor: currencyDisplayToNumber(valor),
+      conta_id: contaId,
+      categoria_id: categoriaId || null,
+      data,
+      anotacao,
+      repetir: repetirAberto ? repetirTipo : null,
+      numeroParcelas: repetirTipo === 'parcelada' ? Number(numeroParcelas) : undefined,
+    })
+    navigate('/transacoes')
+  }
+
+  async function handleConfirmarEdicao(modo) {
+    setConfirmandoEdicao(false)
+    setSalvando(true)
+    await updateTransacao(transacaoEditando.id, montarPayloadEdicao(), modo)
     navigate('/transacoes')
   }
 
@@ -232,6 +251,39 @@ export default function NovaTransacao() {
           addCategoria={addCategoria}
           onCreated={(nova) => nova && setCategoriaId(nova.id)}
         />
+      )}
+
+      {confirmandoEdicao && (
+        <Overlay onClose={() => setConfirmandoEdicao(false)}>
+          <div className="flex justify-center mb-3.5">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-bg)' }}>
+              <IconRepeat size={20} style={{ color: 'var(--accent-color)' }} />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-center mb-1.5">Essa transação se repete</p>
+          <p className="text-xs text-text-secondary text-center mb-5">O que você quer alterar?</p>
+
+          <button
+            onClick={() => handleConfirmarEdicao('este')}
+            className="w-full bg-bg-raised rounded-xl p-3.5 mb-2 text-left"
+          >
+            <p className="text-sm">Somente este mês</p>
+            <p className="text-[11px] text-text-muted mt-0.5">Os outros meses continuam como estavam</p>
+          </button>
+
+          <button
+            onClick={() => handleConfirmarEdicao('proximos')}
+            className="w-full rounded-xl p-3.5 mb-4 text-left"
+            style={{ background: 'var(--accent-bg)' }}
+          >
+            <p className="text-sm font-medium" style={{ color: 'var(--accent-color)' }}>Este e os próximos meses</p>
+            <p className="text-[11px] mt-0.5" style={{ color: 'var(--accent-color)', opacity: 0.75 }}>Aplica a mudança às ocorrências futuras ainda em aberto</p>
+          </button>
+
+          <button onClick={() => setConfirmandoEdicao(false)} className="w-full text-xs text-text-secondary py-1">
+            Cancelar
+          </button>
+        </Overlay>
       )}
 
       {confirmandoExclusao && (

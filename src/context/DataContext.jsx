@@ -428,13 +428,37 @@ export function DataProvider({ children }) {
   )
 
   const updateTransacao = useCallback(
-    async (id, patch) => {
+    async (id, patch, modo = 'este') => {
       const anterior = transacoes.find((x) => x.id === id)
       setTransacoes((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)))
       if (!isDemo) {
         const { error } = await supabase.from('transacoes').update(patch).eq('id', id)
         if (reportError(error, 'editar transação') && anterior) {
           setTransacoes((prev) => prev.map((x) => (x.id === id ? anterior : x)))
+        }
+      }
+
+      // "Este e os próximos": propaga a edição pras ocorrências futuras que
+      // ainda estão em aberto -- menos a data, que é específica de cada uma.
+      if (modo === 'proximos' && anterior?.recorrencia_id) {
+        const { data: _data, ...patchFuturo } = patch
+        const alvos = transacoes.filter(
+          (x) =>
+            x.id !== id &&
+            x.recorrencia_id === anterior.recorrencia_id &&
+            x.data >= anterior.data &&
+            x.status === 'pendente'
+        )
+        if (alvos.length === 0) return
+        const idsAlvos = alvos.map((x) => x.id)
+        setTransacoes((prev) => prev.map((x) => (idsAlvos.includes(x.id) ? { ...x, ...patchFuturo } : x)))
+        if (!isDemo) {
+          const { error } = await supabase.from('transacoes').update(patchFuturo).in('id', idsAlvos)
+          if (reportError(error, 'editar transações futuras')) {
+            setTransacoes((prev) =>
+              prev.map((x) => alvos.find((a) => a.id === x.id) || x)
+            )
+          }
         }
       }
     },
