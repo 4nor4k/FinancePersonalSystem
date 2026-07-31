@@ -36,21 +36,53 @@ export default function AccountStack({ contas, mask }) {
 
   return (
     <div>
-      {contas.length > 1 && (
-        <p className="text-[11px] text-text-muted mb-2.5">Toque no card pra ver a próxima conta</p>
-      )}
-      <div className="mb-4" style={{ height: 104 }} onClick={handleClick}>
-        <div
-          className="rounded-2xl p-4 cursor-pointer h-full"
-          style={{ background: 'var(--accent-color)', ...style }}
-        >
-          <div className="flex justify-between items-start">
-            <span className="text-[11px] font-medium" style={{ color: '#1a0d05', opacity: 0.75 }}>{atual.nome}</span>
-            <IconWifi size={16} style={{ color: '#1a0d05', opacity: 0.75, transform: 'rotate(90deg)' }} />
+      {/* Mobile/tablet: um card por vez, toca pra girar -- economiza espaço vertical */}
+      <div className="lg:hidden">
+        {contas.length > 1 && (
+          <p className="text-[11px] text-text-muted mb-2.5">Toque no card pra ver a próxima conta</p>
+        )}
+        <div className="mb-4" style={{ height: 104 }} onClick={handleClick}>
+          <div
+            className="rounded-2xl p-4 cursor-pointer h-full"
+            style={{ background: 'var(--accent-color)', ...style }}
+          >
+            <div className="flex justify-between items-start">
+              <span className="text-[11px] font-medium" style={{ color: '#1a0d05', opacity: 0.75 }}>{atual.nome}</span>
+              <IconWifi size={16} style={{ color: '#1a0d05', opacity: 0.75, transform: 'rotate(90deg)' }} />
+            </div>
+            <p className="text-xl font-medium mt-5" style={{ color: '#1a0d05' }}>{mask(atual.valorExibido)}</p>
+            {atual.legenda && <p className="text-[10px] mt-0.5" style={{ color: '#1a0d05', opacity: 0.65 }}>{atual.legenda}</p>}
           </div>
-          <p className="text-xl font-medium mt-5" style={{ color: '#1a0d05' }}>{mask(atual.valorExibido)}</p>
-          {atual.legenda && <p className="text-[10px] mt-0.5" style={{ color: '#1a0d05', opacity: 0.65 }}>{atual.legenda}</p>}
         </div>
+      </div>
+
+      {/* Desktop: espaço sobra, mostra todas as contas lado a lado de uma vez */}
+      <div className="hidden lg:grid lg:grid-cols-3 lg:gap-3 lg:mb-6">
+        {contas.map((c, i) => (
+          <div
+            key={c.id}
+            className="rounded-2xl p-4"
+            style={i === 0 ? { background: 'var(--accent-color)' } : { background: 'var(--bg-card)' }}
+          >
+            <div className="flex justify-between items-start">
+              <span
+                className="text-[11px] font-medium"
+                style={i === 0 ? { color: '#1a0d05', opacity: 0.75 } : { color: 'var(--text-secondary)' }}
+              >
+                {c.nome}
+              </span>
+              <IconWifi size={16} style={i === 0 ? { color: '#1a0d05', opacity: 0.75, transform: 'rotate(90deg)' } : { color: 'var(--text-secondary)', transform: 'rotate(90deg)' }} />
+            </div>
+            <p className="text-xl font-medium mt-5" style={i === 0 ? { color: '#1a0d05' } : { color: 'var(--text-primary)' }}>
+              {mask(c.valorExibido)}
+            </p>
+            {c.legenda && (
+              <p className="text-[10px] mt-0.5" style={i === 0 ? { color: '#1a0d05', opacity: 0.65 } : { color: 'var(--text-muted)' }}>
+                {c.legenda}
+              </p>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   )

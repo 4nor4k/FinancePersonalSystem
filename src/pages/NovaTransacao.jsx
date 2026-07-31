@@ -74,7 +74,7 @@ export default function NovaTransacao() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 pb-56">
+    <div className="max-w-md lg:max-w-xl mx-auto px-4 pt-4 pb-56 lg:px-9 lg:pt-7 lg:pb-10">
       <div className="flex items-center justify-between mb-4">
         <button onClick={() => navigate(-1)} className="text-text-secondary">
           <IconX size={18} />

@@ -586,7 +586,7 @@ export default function Minigame() {
   }, [])
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4 pb-28">
+    <div className="max-w-md lg:max-w-2xl mx-auto px-4 pt-4 pb-28 lg:px-9 lg:pt-7 lg:pb-10">
       <div className="flex items-center justify-between mb-3">
         <button onClick={() => navigate(-1)} className="text-text-secondary">
           <IconChevronLeft size={20} />
