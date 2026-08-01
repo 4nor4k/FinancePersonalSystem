@@ -13,12 +13,10 @@ import {
   IconGift,
   IconNotes,
   IconDeviceGamepad2,
-  IconFingerprint,
   IconLogout,
 } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
-import { biometriaAtiva, biometriaDisponivel, registrarBiometria, desativarBiometria } from '../lib/biometria'
 import { COR_PADRAO } from '../lib/colors'
 import ColorPicker from './ColorPicker'
 import Overlay from './Overlay'
@@ -38,37 +36,15 @@ const NAV_ITEMS = [
 ]
 
 // Barra lateral fixa pra telas grandes -- espelha os controles do SideMenu
-// (perfis, biometria, sair) só que sempre visível, sem overlay.
+// (perfis, sair) só que sempre visível, sem overlay.
 export default function Sidebar() {
   const navigate = useNavigate()
-  const { user, isDemo, signOut } = useAuth()
+  const { signOut } = useAuth()
   const { perfis, activeProfile, setActiveProfileId, updateProfile, addProfile } = useData()
   const [editando, setEditando] = useState(null)
   const [criandoAberto, setCriandoAberto] = useState(false)
   const [novoNome, setNovoNome] = useState('')
   const [novaCor, setNovaCor] = useState(COR_PADRAO)
-  const [bioAtiva, setBioAtiva] = useState(biometriaAtiva())
-  const [bioErro, setBioErro] = useState('')
-
-  async function toggleBiometria() {
-    setBioErro('')
-    if (bioAtiva) {
-      desativarBiometria()
-      setBioAtiva(false)
-      return
-    }
-    const disponivel = await biometriaDisponivel()
-    if (!disponivel) {
-      setBioErro('Sem biometria disponível neste navegador.')
-      return
-    }
-    try {
-      await registrarBiometria(isDemo ? 'demo' : user?.email)
-      setBioAtiva(true)
-    } catch {
-      setBioErro('Não foi possível ativar. Tenta de novo.')
-    }
-  }
 
   async function salvarEdicao() {
     if (!editando.nome.trim()) return
@@ -152,19 +128,6 @@ export default function Sidebar() {
       </nav>
 
       <div className="flex flex-col gap-2">
-        <button
-          onClick={toggleBiometria}
-          className="flex items-center justify-between px-2.5 py-2 rounded-lg bg-bg-card text-xs"
-        >
-          <span className="flex items-center gap-2"><IconFingerprint size={15} className="text-text-secondary" /> Biometria</span>
-          <div className="w-8 h-[17px] rounded-full relative" style={{ background: bioAtiva ? 'var(--accent-bg)' : '#1a1a1a' }}>
-            <div
-              className="w-3.5 h-3.5 rounded-full absolute top-[1.5px] transition-all"
-              style={{ background: bioAtiva ? 'var(--accent-color)' : '#5c5c59', left: bioAtiva ? 16 : 2 }}
-            />
-          </div>
-        </button>
-        {bioErro && <p className="text-[10px] text-center" style={{ color: '#e2716f' }}>{bioErro}</p>}
         <button
           onClick={handleSair}
           className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#1e1414] text-[#e2716f] text-xs"
