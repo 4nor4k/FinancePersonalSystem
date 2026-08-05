@@ -53,6 +53,17 @@ export function DataProvider({ children }) {
   }
   const [calcExpr, setCalcExpr] = useState('')
 
+  // Filtros da tela de Transações -- vivem aqui (e não como useState local na
+  // página) pra sobreviverem quando você navega pra editar uma transação e
+  // volta. Antes isso resetava tudo porque a página desmontava.
+  const [filtrosTransacoes, setFiltrosTransacoes] = useState({
+    tipo: 'despesa',
+    contaId: '',
+    categoriaId: '',
+    mesRef: new Date().toISOString().slice(0, 7),
+    ordenacao: 'data',
+  })
+
   // Carrega os dados: mock em memória no modo demo, ou do Supabase quando logado de verdade.
   useEffect(() => {
     let cancelled = false
@@ -719,6 +730,8 @@ export function DataProvider({ children }) {
     setValuesHidden,
     calcExpr,
     setCalcExpr,
+    filtrosTransacoes,
+    setFiltrosTransacoes,
     perfis,
     activeProfile,
     activeProfileId,

@@ -9,21 +9,30 @@ import PickerField from '../components/PickerField'
 
 export default function Transacoes() {
   const navigate = useNavigate()
-  const { transacoes, categorias, contas, consolidarTransacao, excluirTransacao } = useData()
-  const [filtroTipo, setFiltroTipo] = useState('despesa')
-  const [filtroContaId, setFiltroContaId] = useState('')
-  const [filtroCategoriaId, setFiltroCategoriaId] = useState('')
-  const [mesRef, setMesRef] = useState(new Date().toISOString().slice(0, 7))
-  const [ordenacao, setOrdenacao] = useState('data')
+  const { transacoes, categorias, contas, consolidarTransacao, excluirTransacao, filtrosTransacoes, setFiltrosTransacoes } = useData()
+  const { tipo: filtroTipo, contaId: filtroContaId, categoriaId: filtroCategoriaId, mesRef, ordenacao } = filtrosTransacoes
   const [excluindo, setExcluindo] = useState(null)
   const [modalFiltros, setModalFiltros] = useState(false)
+
+  function setFiltroTipo(tipo) {
+    setFiltrosTransacoes((f) => ({ ...f, tipo }))
+  }
+  function setFiltroContaId(contaId) {
+    setFiltrosTransacoes((f) => ({ ...f, contaId }))
+  }
+  function setFiltroCategoriaId(categoriaId) {
+    setFiltrosTransacoes((f) => ({ ...f, categoriaId }))
+  }
+  function setOrdenacao(ordenacao) {
+    setFiltrosTransacoes((f) => ({ ...f, ordenacao }))
+  }
 
   const filtrosAtivos = !!filtroContaId || !!filtroCategoriaId
 
   function mudarMes(delta) {
     const [ano, mes] = mesRef.split('-').map(Number)
     const d = new Date(ano, mes - 1 + delta, 1)
-    setMesRef(d.toISOString().slice(0, 7))
+    setFiltrosTransacoes((f) => ({ ...f, mesRef: d.toISOString().slice(0, 7) }))
   }
 
   const filtradas = useMemo(() => {
