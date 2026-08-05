@@ -10,7 +10,7 @@ import PickerField from '../components/PickerField'
 export default function Transacoes() {
   const navigate = useNavigate()
   const { transacoes, categorias, contas, consolidarTransacao, excluirTransacao } = useData()
-  const [filtroTipo, setFiltroTipo] = useState('todas')
+  const [filtroTipo, setFiltroTipo] = useState('despesa')
   const [filtroContaId, setFiltroContaId] = useState('')
   const [filtroCategoriaId, setFiltroCategoriaId] = useState('')
   const [mesRef, setMesRef] = useState(new Date().toISOString().slice(0, 7))
@@ -27,8 +27,7 @@ export default function Transacoes() {
   }
 
   const filtradas = useMemo(() => {
-    let lista = transacoes.filter((t) => t.data.slice(0, 7) === mesRef)
-    if (filtroTipo !== 'todas') lista = lista.filter((t) => t.tipo === filtroTipo)
+    let lista = transacoes.filter((t) => t.data.slice(0, 7) === mesRef && t.tipo === filtroTipo)
     if (filtroContaId) lista = lista.filter((t) => t.conta_id === filtroContaId)
     if (filtroCategoriaId) lista = lista.filter((t) => t.categoria_id === filtroCategoriaId)
     lista = [...lista].sort((a, b) => {
@@ -40,19 +39,19 @@ export default function Transacoes() {
   }, [transacoes, filtroTipo, filtroContaId, filtroCategoriaId, mesRef, ordenacao])
 
   // Resumo com base na mesma lista que aparece na tela -- então reflete
-  // automaticamente o mês e todos os filtros ativos (tipo, conta, categoria).
-  const totalDespesas = filtradas
-    .filter((t) => t.tipo === 'despesa')
-    .reduce((a, t) => a + (Number(t.valor) || 0), 0)
-  const totalReceitas = filtradas
-    .filter((t) => t.tipo === 'receita')
-    .reduce((a, t) => a + (Number(t.valor) || 0), 0)
+  // automaticamente o mês, o tipo (despesa ou receita) e os demais filtros
+  // ativos (conta, categoria). Sem "todas" misturando tipo, o total bate
+  // sempre com o que está listado.
+  const totalTipo = filtradas.reduce((a, t) => a + (Number(t.valor) || 0), 0)
   const totalPago = filtradas
     .filter((t) => t.status === 'pago' || t.status === 'recebido')
     .reduce((a, t) => a + (Number(t.valor) || 0), 0)
   const totalPendente = filtradas
     .filter((t) => t.status === 'pendente')
     .reduce((a, t) => a + (Number(t.valor) || 0), 0)
+  const corTipo = filtroTipo === 'receita' ? '#7fd88f' : '#e2716f'
+  const labelTipo = filtroTipo === 'receita' ? 'Receitas' : 'Despesas'
+  const labelPago = filtroTipo === 'receita' ? 'Recebido' : 'Pago'
 
   const [nomeMes, ano] = new Date(mesRef + '-02').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).split(' de ')
 
@@ -117,7 +116,7 @@ export default function Transacoes() {
           <div>
             <p className="text-[10px] uppercase tracking-wide text-text-muted mb-1.5">Tipo</p>
             <div className="flex gap-1.5 bg-bg-raised rounded-full p-1">
-              {['todas', 'despesa', 'receita'].map((t) => (
+              {['despesa', 'receita'].map((t) => (
                 <button
                   key={t}
                   onClick={() => setFiltroTipo(t)}
@@ -126,13 +125,11 @@ export default function Transacoes() {
                     filtroTipo === t
                       ? t === 'despesa'
                         ? { background: '#2a1e1e', color: '#d97a7a', fontWeight: 500 }
-                        : t === 'receita'
-                        ? { background: '#1e2e24', color: '#7fd88f', fontWeight: 500 }
-                        : { background: '#333331', color: '#f0f0ee', fontWeight: 500 }
+                        : { background: '#1e2e24', color: '#7fd88f', fontWeight: 500 }
                       : { color: '#8a8a87' }
                   }
                 >
-                  {t === 'todas' ? 'Todas' : t === 'despesa' ? 'Despesas' : 'Receitas'}
+                  {t === 'despesa' ? 'Despesas' : 'Receitas'}
                 </button>
               ))}
             </div>
@@ -161,18 +158,14 @@ export default function Transacoes() {
 
           <div className="flex flex-col gap-2">
             <p className="text-[10px] uppercase tracking-wide text-text-muted">
-              {filtrosAtivos || filtroTipo !== 'todas' ? 'Resumo do filtro' : 'Resumo do mês'}
+              Resumo de {labelTipo.toLowerCase()}{filtrosAtivos ? ' (filtro)' : ' do mês'}
             </p>
             <div className="bg-bg-raised rounded-lg px-3 py-2.5 flex items-center justify-between">
-              <span className="text-[11px] text-text-secondary">Despesas</span>
-              <span className="text-xs font-medium" style={{ color: '#e2716f' }}>{formatBRL(totalDespesas)}</span>
+              <span className="text-[11px] text-text-secondary">Total</span>
+              <span className="text-xs font-medium" style={{ color: corTipo }}>{formatBRL(totalTipo)}</span>
             </div>
             <div className="bg-bg-raised rounded-lg px-3 py-2.5 flex items-center justify-between">
-              <span className="text-[11px] text-text-secondary">Receitas</span>
-              <span className="text-xs font-medium" style={{ color: '#7fd88f' }}>{formatBRL(totalReceitas)}</span>
-            </div>
-            <div className="bg-bg-raised rounded-lg px-3 py-2.5 flex items-center justify-between">
-              <span className="text-[11px] text-text-secondary">Pago / recebido</span>
+              <span className="text-[11px] text-text-secondary">{labelPago}</span>
               <span className="text-xs font-medium">{formatBRL(totalPago)}</span>
             </div>
             <div className="bg-bg-raised rounded-lg px-3 py-2.5 flex items-center justify-between">
@@ -203,7 +196,6 @@ export default function Transacoes() {
           </div>
 
           <div className="lg:hidden flex gap-2 mb-3.5">
-            <FilterBtn active={filtroTipo === 'todas'} onClick={() => setFiltroTipo('todas')}>Todas</FilterBtn>
             <FilterBtn active={filtroTipo === 'despesa'} onClick={() => setFiltroTipo('despesa')} color="#d97a7a" bg="#2a1e1e">
               <IconArrowDown size={14} /> Despesas
             </FilterBtn>
@@ -213,19 +205,15 @@ export default function Transacoes() {
           </div>
 
           <p className="lg:hidden text-[10px] uppercase tracking-wide text-text-muted mb-1.5">
-            {filtrosAtivos || filtroTipo !== 'todas' ? 'Resumo do filtro' : 'Resumo do mês'}
+            Resumo de {labelTipo.toLowerCase()}{filtrosAtivos ? ' (filtro)' : ' do mês'}
           </p>
-          <div className="lg:hidden grid grid-cols-2 gap-2 mb-3.5">
+          <div className="lg:hidden grid grid-cols-3 gap-2 mb-3.5">
             <div className="bg-bg-card rounded-xl p-2.5">
-              <p className="text-[11px] text-text-secondary mb-0.5">Despesas</p>
-              <p className="text-sm font-medium" style={{ color: '#e2716f' }}>{formatBRL(totalDespesas)}</p>
+              <p className="text-[11px] text-text-secondary mb-0.5">Total</p>
+              <p className="text-sm font-medium" style={{ color: corTipo }}>{formatBRL(totalTipo)}</p>
             </div>
             <div className="bg-bg-card rounded-xl p-2.5">
-              <p className="text-[11px] text-text-secondary mb-0.5">Receitas</p>
-              <p className="text-sm font-medium" style={{ color: '#7fd88f' }}>{formatBRL(totalReceitas)}</p>
-            </div>
-            <div className="bg-bg-card rounded-xl p-2.5">
-              <p className="text-[11px] text-text-secondary mb-0.5">Pago / recebido</p>
+              <p className="text-[11px] text-text-secondary mb-0.5">{labelPago}</p>
               <p className="text-sm font-medium">{formatBRL(totalPago)}</p>
             </div>
             <div className="bg-bg-card rounded-xl p-2.5">
