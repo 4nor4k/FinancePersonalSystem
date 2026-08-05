@@ -368,7 +368,12 @@ export function DataProvider({ children }) {
         const novas = []
         const [ano, mes, dia] = base.data.split('-').map(Number)
         for (let i = 0; i < numParcelas; i++) {
-          const d = new Date(ano, mes - 1 + i, dia)
+          // new Date(ano, mes, dia) estoura pro mês seguinte quando o dia não
+          // existe nele (ex: dia 31 + 1 mês num mês de 30 dias). Por isso
+          // travamos no último dia válido do mês de destino, em vez de deixar
+          // o overflow bagunçar a sequência de datas.
+          const ultimoDiaDoMesAlvo = new Date(ano, mes + i, 0).getDate()
+          const d = new Date(ano, mes - 1 + i, Math.min(dia, ultimoDiaDoMesAlvo))
           novas.push({
             id: 't-' + Date.now() + '-' + i,
             perfil_id: activeProfileId,

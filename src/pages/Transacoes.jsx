@@ -39,11 +39,19 @@ export default function Transacoes() {
     return lista
   }, [transacoes, filtroTipo, filtroContaId, filtroCategoriaId, mesRef, ordenacao])
 
-  const totalDespesas = transacoes
-    .filter((t) => t.data.slice(0, 7) === mesRef && t.tipo === 'despesa')
+  // Resumo com base na mesma lista que aparece na tela -- então reflete
+  // automaticamente o mês e todos os filtros ativos (tipo, conta, categoria).
+  const totalDespesas = filtradas
+    .filter((t) => t.tipo === 'despesa')
     .reduce((a, t) => a + (Number(t.valor) || 0), 0)
-  const totalReceitas = transacoes
-    .filter((t) => t.data.slice(0, 7) === mesRef && t.tipo === 'receita')
+  const totalReceitas = filtradas
+    .filter((t) => t.tipo === 'receita')
+    .reduce((a, t) => a + (Number(t.valor) || 0), 0)
+  const totalPago = filtradas
+    .filter((t) => t.status === 'pago' || t.status === 'recebido')
+    .reduce((a, t) => a + (Number(t.valor) || 0), 0)
+  const totalPendente = filtradas
+    .filter((t) => t.status === 'pendente')
     .reduce((a, t) => a + (Number(t.valor) || 0), 0)
 
   const [nomeMes, ano] = new Date(mesRef + '-02').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).split(' de ')
@@ -152,6 +160,9 @@ export default function Transacoes() {
           </div>
 
           <div className="flex flex-col gap-2">
+            <p className="text-[10px] uppercase tracking-wide text-text-muted">
+              {filtrosAtivos || filtroTipo !== 'todas' ? 'Resumo do filtro' : 'Resumo do mês'}
+            </p>
             <div className="bg-bg-raised rounded-lg px-3 py-2.5 flex items-center justify-between">
               <span className="text-[11px] text-text-secondary">Despesas</span>
               <span className="text-xs font-medium" style={{ color: '#e2716f' }}>{formatBRL(totalDespesas)}</span>
@@ -159,6 +170,14 @@ export default function Transacoes() {
             <div className="bg-bg-raised rounded-lg px-3 py-2.5 flex items-center justify-between">
               <span className="text-[11px] text-text-secondary">Receitas</span>
               <span className="text-xs font-medium" style={{ color: '#7fd88f' }}>{formatBRL(totalReceitas)}</span>
+            </div>
+            <div className="bg-bg-raised rounded-lg px-3 py-2.5 flex items-center justify-between">
+              <span className="text-[11px] text-text-secondary">Pago / recebido</span>
+              <span className="text-xs font-medium">{formatBRL(totalPago)}</span>
+            </div>
+            <div className="bg-bg-raised rounded-lg px-3 py-2.5 flex items-center justify-between">
+              <span className="text-[11px] text-text-secondary">Pendente</span>
+              <span className="text-xs font-medium" style={{ color: '#d99b6a' }}>{formatBRL(totalPendente)}</span>
             </div>
           </div>
 
@@ -193,14 +212,25 @@ export default function Transacoes() {
             </FilterBtn>
           </div>
 
-          <div className="lg:hidden flex gap-2 mb-3.5">
-            <div className="flex-1 bg-bg-card rounded-xl p-2.5">
+          <p className="lg:hidden text-[10px] uppercase tracking-wide text-text-muted mb-1.5">
+            {filtrosAtivos || filtroTipo !== 'todas' ? 'Resumo do filtro' : 'Resumo do mês'}
+          </p>
+          <div className="lg:hidden grid grid-cols-2 gap-2 mb-3.5">
+            <div className="bg-bg-card rounded-xl p-2.5">
               <p className="text-[11px] text-text-secondary mb-0.5">Despesas</p>
               <p className="text-sm font-medium" style={{ color: '#e2716f' }}>{formatBRL(totalDespesas)}</p>
             </div>
-            <div className="flex-1 bg-bg-card rounded-xl p-2.5">
+            <div className="bg-bg-card rounded-xl p-2.5">
               <p className="text-[11px] text-text-secondary mb-0.5">Receitas</p>
               <p className="text-sm font-medium" style={{ color: '#7fd88f' }}>{formatBRL(totalReceitas)}</p>
+            </div>
+            <div className="bg-bg-card rounded-xl p-2.5">
+              <p className="text-[11px] text-text-secondary mb-0.5">Pago / recebido</p>
+              <p className="text-sm font-medium">{formatBRL(totalPago)}</p>
+            </div>
+            <div className="bg-bg-card rounded-xl p-2.5">
+              <p className="text-[11px] text-text-secondary mb-0.5">Pendente</p>
+              <p className="text-sm font-medium" style={{ color: '#d99b6a' }}>{formatBRL(totalPendente)}</p>
             </div>
           </div>
 

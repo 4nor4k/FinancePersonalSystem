@@ -427,12 +427,12 @@ function ChartsCarousel({ despesasPorCategoria, totalCategorias, balancoPorMes, 
           ) : (
             <div className="flex items-center gap-4">
               <Donut fatias={despesasPorCategoria} total={totalCategorias} />
-              <div className="flex-1 flex flex-col gap-2">
-                {despesasPorCategoria.slice(0, 4).map(({ categoria, valor }) => (
+              <div className="flex-1 flex flex-col gap-2 max-h-[168px] overflow-y-auto pr-1">
+                {despesasPorCategoria.map(({ categoria, valor }) => (
                   <div key={categoria.id} className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: categoria.cor }} />
                     <span className="text-xs text-text-secondary truncate flex-1">{categoria.nome}</span>
-                    <span className="text-xs">{mask(formatBRL(valor))}</span>
+                    <span className="text-xs flex-shrink-0">{mask(formatBRL(valor))}</span>
                   </div>
                 ))}
               </div>
@@ -460,7 +460,7 @@ function Donut({ fatias, total }) {
   return (
     <svg width="88" height="88" viewBox="0 0 88 88" className="flex-shrink-0">
       <circle cx="44" cy="44" r={raio} fill="none" stroke="var(--card-tone-2)" strokeWidth="13" />
-      {fatias.slice(0, 5).map(({ categoria, valor }) => {
+      {fatias.map(({ categoria, valor }) => {
         const frac = valor / total
         const dash = frac * circ
         const offset = circ - acumulado
