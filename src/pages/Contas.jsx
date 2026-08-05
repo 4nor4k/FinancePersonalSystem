@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconPlus, IconEdit, IconGripVertical } from '@tabler/icons-react'
+import { IconChevronLeft, IconPlus, IconEdit, IconGripVertical, IconTrash } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL, digitsToCurrencyDisplay, currencyDisplayToNumber, numberToCurrencyDisplay } from '../lib/format'
 import { COR_PADRAO } from '../lib/colors'
@@ -13,7 +13,7 @@ const ICONES = [
 
 export default function Contas() {
   const navigate = useNavigate()
-  const { contas, transacoes, addConta, updateConta, reordenarContas } = useData()
+  const { contas, transacoes, addConta, updateConta, deleteConta, reordenarContas } = useData()
   const [criando, setCriando] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
   const [form, setForm] = useState({ nome: '', tipo: 'comum', limite: '', icone: ICONES[0], cor: COR_PADRAO })
@@ -29,6 +29,22 @@ export default function Contas() {
       return `${formatBRL((conta.limite || 0) - usado)} disponível`
     }
     return formatBRL(soma)
+  }
+
+  function contarTransacoes(contaId) {
+    return transacoes.filter((t) => t.conta_id === contaId).length
+  }
+
+  function handleExcluirConta(conta) {
+    const qtd = contarTransacoes(conta.id)
+    const aviso =
+      qtd > 0
+        ? `Excluir "${conta.nome}"? Isso também apaga ${qtd} transação${qtd > 1 ? 'ões' : ''} lançada${qtd > 1 ? 's' : ''} nessa conta. Essa ação não pode ser desfeita.`
+        : `Excluir "${conta.nome}"? Essa ação não pode ser desfeita.`
+    if (confirm(aviso)) {
+      deleteConta(conta.id)
+      setEditandoId(null)
+    }
   }
 
   async function handleCriar() {
@@ -115,6 +131,7 @@ export default function Contas() {
         editandoId={editandoId}
         onToggleEditar={(id) => setEditandoId(editandoId === id ? null : id)}
         onUpdate={updateConta}
+        onDelete={handleExcluirConta}
         saldoConta={saldoConta}
         onReorder={reordenarContas}
       />
@@ -130,7 +147,7 @@ export default function Contas() {
 // tempo real -- isso é o que causava o bug de "não muda". A posição final só
 // é calculada UMA VEZ, quando você solta o dedo, comparando com a posição
 // medida de cada item no momento em que o arrasto começou.
-function ReorderableList({ contas, editandoId, onToggleEditar, onUpdate, saldoConta, onReorder }) {
+function ReorderableList({ contas, editandoId, onToggleEditar, onUpdate, onDelete, saldoConta, onReorder }) {
   const itemRefs = useRef([])
   const [dragInfo, setDragInfo] = useState(null)
 
@@ -203,6 +220,7 @@ function ReorderableList({ contas, editandoId, onToggleEditar, onUpdate, saldoCo
             editando={editandoId === c.id}
             onToggleEditar={() => onToggleEditar(c.id)}
             onUpdate={onUpdate}
+            onDelete={onDelete}
             saldoLabel={saldoConta(c)}
             onDragHandleDown={(e) => handlePointerDown(e, i)}
           />
@@ -212,7 +230,7 @@ function ReorderableList({ contas, editandoId, onToggleEditar, onUpdate, saldoCo
   )
 }
 
-function ContaItem({ conta: c, editando, onToggleEditar, onUpdate, saldoLabel, onDragHandleDown }) {
+function ContaItem({ conta: c, editando, onToggleEditar, onUpdate, onDelete, saldoLabel, onDragHandleDown }) {
   const [limiteEdit, setLimiteEdit] = useState(numberToCurrencyDisplay(c.limite))
 
   function salvarLimite() {
@@ -282,6 +300,15 @@ function ContaItem({ conta: c, editando, onToggleEditar, onUpdate, saldoLabel, o
           </div>
           <p className="text-[11px] text-text-muted mb-1.5">Cor</p>
           <ColorPicker value={c.cor} onChange={(cor) => onUpdate(c.id, { cor })} />
+
+          <button
+            onClick={() => onDelete(c)}
+            className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-medium mt-4"
+            style={{ background: '#1e1414', color: '#e2716f' }}
+          >
+            <IconTrash size={14} />
+            Excluir conta
+          </button>
         </div>
       )}
     </div>

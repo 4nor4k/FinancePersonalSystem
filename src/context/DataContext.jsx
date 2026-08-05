@@ -290,6 +290,26 @@ export function DataProvider({ children }) {
     [isDemo, contas]
   )
 
+  // Exclui a conta e, junto, todas as transações ligadas a ela -- o banco
+  // tem "on delete cascade" em transacoes.conta_id, então apagar a conta lá
+  // já apaga as transações; aqui só espelhamos isso no estado local.
+  const deleteConta = useCallback(
+    async (id) => {
+      const contaAnterior = contas.find((c) => c.id === id)
+      const transacoesRemovidas = transacoes.filter((t) => t.conta_id === id)
+      setContas((prev) => prev.filter((c) => c.id !== id))
+      setTransacoes((prev) => prev.filter((t) => t.conta_id !== id))
+      if (!isDemo) {
+        const { error } = await supabase.from('contas').delete().eq('id', id)
+        if (reportError(error, 'excluir conta')) {
+          if (contaAnterior) setContas((prev) => [...prev, contaAnterior])
+          setTransacoes((prev) => [...prev, ...transacoesRemovidas])
+        }
+      }
+    },
+    [isDemo, contas, transacoes]
+  )
+
   // ---------- Categorias ----------
   const addCategoria = useCallback(
     async ({ nome, tipo, icone, cor }) => {
@@ -743,6 +763,7 @@ export function DataProvider({ children }) {
       .sort((a, b) => (a.ordem ?? 999) - (b.ordem ?? 999)),
     addConta,
     updateConta,
+    deleteConta,
     reordenarContas,
     categorias: categorias.filter((c) => c.perfil_id === activeProfileId),
     addCategoria,

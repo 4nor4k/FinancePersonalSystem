@@ -433,6 +433,9 @@ function ChartsCarousel({ despesasPorCategoria, totalCategorias, balancoPorMes, 
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: categoria.cor }} />
                     <span className="text-xs text-text-secondary truncate flex-1">{categoria.nome}</span>
                     <span className="text-xs flex-shrink-0">{mask(formatBRL(valor))}</span>
+                    <span className="text-[11px] text-text-muted flex-shrink-0 w-9 text-right">
+                      {Math.round((valor / totalCategorias) * 100)}%
+                    </span>
                   </div>
                 ))}
               </div>
