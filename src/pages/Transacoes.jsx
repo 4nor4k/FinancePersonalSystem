@@ -58,6 +58,17 @@ export default function Transacoes() {
   const totalPendente = filtradas
     .filter((t) => t.status === 'pendente')
     .reduce((a, t) => a + (Number(t.valor) || 0), 0)
+
+  // Saldo do mês -- receitas menos despesas do mês inteiro (respeita filtros
+  // de conta/categoria, mas soma os dois tipos, não só o tipo selecionado na aba)
+  const saldoMes = useMemo(() => {
+    let lista = transacoes.filter((t) => t.data.slice(0, 7) === mesRef)
+    if (filtroContaId) lista = lista.filter((t) => t.conta_id === filtroContaId)
+    if (filtroCategoriaId) lista = lista.filter((t) => t.categoria_id === filtroCategoriaId)
+    const receitas = lista.filter((t) => t.tipo === 'receita').reduce((a, t) => a + (Number(t.valor) || 0), 0)
+    const despesas = lista.filter((t) => t.tipo === 'despesa').reduce((a, t) => a + (Number(t.valor) || 0), 0)
+    return receitas - despesas
+  }, [transacoes, mesRef, filtroContaId, filtroCategoriaId])
   const corTipo = filtroTipo === 'receita' ? '#7fd88f' : '#e2716f'
   const labelTipo = filtroTipo === 'receita' ? 'Receitas' : 'Despesas'
   const labelPago = filtroTipo === 'receita' ? 'Recebido' : 'Pago'
@@ -181,6 +192,10 @@ export default function Transacoes() {
               <span className="text-[11px] text-text-secondary">Pendente</span>
               <span className="text-xs font-medium" style={{ color: '#d99b6a' }}>{formatBRL(totalPendente)}</span>
             </div>
+            <div className="bg-bg-raised rounded-lg px-3 py-2.5 flex items-center justify-between">
+              <span className="text-[11px] text-text-secondary">Saldo do mês</span>
+              <span className="text-xs font-medium" style={{ color: saldoMes >= 0 ? '#7fd88f' : '#e2716f' }}>{formatBRL(saldoMes)}</span>
+            </div>
           </div>
 
           {filtrosAtivos && (
@@ -229,6 +244,11 @@ export default function Transacoes() {
               <p className="text-[11px] text-text-secondary mb-0.5">Pendente</p>
               <p className="text-sm font-medium" style={{ color: '#d99b6a' }}>{formatBRL(totalPendente)}</p>
             </div>
+          </div>
+
+          <div className="lg:hidden bg-bg-card rounded-xl p-2.5 flex items-center justify-between mb-3.5">
+            <span className="text-[11px] text-text-secondary">Saldo do mês</span>
+            <span className="text-sm font-medium" style={{ color: saldoMes >= 0 ? '#7fd88f' : '#e2716f' }}>{formatBRL(saldoMes)}</span>
           </div>
 
           <div className="lg:hidden flex justify-between items-center mb-2">
