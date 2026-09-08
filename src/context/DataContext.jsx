@@ -60,6 +60,7 @@ export function DataProvider({ children }) {
     tipo: 'despesa',
     contaId: '',
     categoriaId: '',
+    statusFiltro: '',
     mesRef: new Date().toISOString().slice(0, 7),
     ordenacao: 'data',
   })

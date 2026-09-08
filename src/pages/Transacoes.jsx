@@ -10,7 +10,7 @@ import PickerField from '../components/PickerField'
 export default function Transacoes() {
   const navigate = useNavigate()
   const { transacoes, categorias, contas, consolidarTransacao, excluirTransacao, filtrosTransacoes, setFiltrosTransacoes } = useData()
-  const { tipo: filtroTipo, contaId: filtroContaId, categoriaId: filtroCategoriaId, mesRef, ordenacao } = filtrosTransacoes
+  const { tipo: filtroTipo, contaId: filtroContaId, categoriaId: filtroCategoriaId, statusFiltro, mesRef, ordenacao } = filtrosTransacoes
   const [excluindo, setExcluindo] = useState(null)
   const [modalFiltros, setModalFiltros] = useState(false)
   const [sortState, setSortState] = useState({ col: null, dir: 1 })
@@ -32,11 +32,14 @@ export default function Transacoes() {
   function setFiltroCategoriaId(categoriaId) {
     setFiltrosTransacoes((f) => ({ ...f, categoriaId }))
   }
+  function setFiltroStatus(statusFiltro) {
+    setFiltrosTransacoes((f) => ({ ...f, statusFiltro }))
+  }
   function setOrdenacao(ordenacao) {
     setFiltrosTransacoes((f) => ({ ...f, ordenacao }))
   }
 
-  const filtrosAtivos = !!filtroContaId || !!filtroCategoriaId
+  const filtrosAtivos = !!filtroContaId || !!filtroCategoriaId || !!statusFiltro
 
   function mudarMes(delta) {
     const [ano, mes] = mesRef.split('-').map(Number)
@@ -44,17 +47,30 @@ export default function Transacoes() {
     setFiltrosTransacoes((f) => ({ ...f, mesRef: d.toISOString().slice(0, 7) }))
   }
 
+  // Status "de verdade" da transação -- pendente vira "vencido" se a data já passou.
+  function getStatusLabel(t) {
+    const vencido = t.status === 'pendente' && t.data < new Date().toISOString().slice(0, 10)
+    return t.status === 'pendente' ? (vencido ? 'vencido' : 'pendente') : t.status
+  }
+
   const filtradas = useMemo(() => {
     let lista = transacoes.filter((t) => t.data.slice(0, 7) === mesRef && t.tipo === filtroTipo)
     if (filtroContaId) lista = lista.filter((t) => t.conta_id === filtroContaId)
     if (filtroCategoriaId) lista = lista.filter((t) => t.categoria_id === filtroCategoriaId)
+    if (statusFiltro) {
+      lista = lista.filter((t) => {
+        const label = getStatusLabel(t)
+        if (statusFiltro === 'pago') return label === 'pago' || label === 'recebido'
+        return label === statusFiltro
+      })
+    }
     lista = [...lista].sort((a, b) => {
       if (ordenacao === 'valor') return b.valor - a.valor
       if (ordenacao === 'categoria') return (a.categoria_id || '').localeCompare(b.categoria_id || '')
       return a.data.localeCompare(b.data)
     })
     return lista
-  }, [transacoes, filtroTipo, filtroContaId, filtroCategoriaId, mesRef, ordenacao])
+  }, [transacoes, filtroTipo, filtroContaId, filtroCategoriaId, statusFiltro, mesRef, ordenacao])
 
   // Resumo com base na mesma lista que aparece na tela -- então reflete
   // automaticamente o mês, o tipo (despesa ou receita) e os demais filtros
@@ -191,6 +207,36 @@ export default function Transacoes() {
             <PickerField placeholder="Todas as categorias" options={categorias} value={filtroCategoriaId} onChange={setFiltroCategoriaId} />
           </div>
           <div>
+            <p className="text-[10px] uppercase tracking-wide text-text-muted mb-1.5">Status</p>
+            <div className="flex gap-1.5 bg-bg-raised rounded-full p-1">
+              {[
+                { value: '', label: 'Todos' },
+                { value: 'pago', label: 'Pagos' },
+                { value: 'vencido', label: 'Vencidos' },
+                { value: 'pendente', label: 'Pendentes' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFiltroStatus(opt.value)}
+                  className="flex-1 text-center text-[10px] py-1.5 rounded-full"
+                  style={
+                    statusFiltro === opt.value
+                      ? opt.value === 'pago'
+                        ? { background: '#1e2e24', color: '#7fd88f', fontWeight: 500 }
+                        : opt.value === 'vencido'
+                        ? { background: '#2a2320', color: '#d99b6a', fontWeight: 500 }
+                        : opt.value === 'pendente'
+                        ? { background: '#232323', color: '#e5e5e2', fontWeight: 500 }
+                        : { background: '#333331', color: '#f0f0ee', fontWeight: 500 }
+                      : { color: '#8a8a87' }
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
             <p className="text-[10px] uppercase tracking-wide text-text-muted mb-1.5">Ordenar por</p>
             <select
               value={ordenacao}
@@ -230,6 +276,7 @@ export default function Transacoes() {
               onClick={() => {
                 setFiltroContaId('')
                 setFiltroCategoriaId('')
+                setFiltroStatus('')
               }}
               className="text-[11px] text-text-secondary"
             >
@@ -471,13 +518,42 @@ export default function Transacoes() {
           </div>
 
           <p className="text-[11px] text-text-muted mb-1.5">Categoria</p>
-          <div className="mb-5">
+          <div className="mb-4">
             <PickerField
               placeholder="Todas as categorias"
               options={categorias}
               value={filtroCategoriaId}
               onChange={setFiltroCategoriaId}
             />
+          </div>
+
+          <p className="text-[11px] text-text-muted mb-1.5">Status</p>
+          <div className="flex gap-1.5 bg-bg-raised rounded-full p-1 mb-5">
+            {[
+              { value: '', label: 'Todos' },
+              { value: 'pago', label: 'Pagos' },
+              { value: 'vencido', label: 'Vencidos' },
+              { value: 'pendente', label: 'Pendentes' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setFiltroStatus(opt.value)}
+                className="flex-1 text-center text-[10px] py-1.5 rounded-full"
+                style={
+                  statusFiltro === opt.value
+                    ? opt.value === 'pago'
+                      ? { background: '#1e2e24', color: '#7fd88f', fontWeight: 500 }
+                      : opt.value === 'vencido'
+                      ? { background: '#2a2320', color: '#d99b6a', fontWeight: 500 }
+                      : opt.value === 'pendente'
+                      ? { background: '#232323', color: '#e5e5e2', fontWeight: 500 }
+                      : { background: '#333331', color: '#f0f0ee', fontWeight: 500 }
+                    : { color: '#8a8a87' }
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
 
           <button
@@ -492,6 +568,7 @@ export default function Transacoes() {
               onClick={() => {
                 setFiltroContaId('')
                 setFiltroCategoriaId('')
+                setFiltroStatus('')
               }}
               className="w-full text-xs text-text-secondary py-1"
             >
