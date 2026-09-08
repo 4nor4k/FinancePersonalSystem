@@ -52,7 +52,12 @@ export default function SwipeableRow({ children, actions }) {
         onPointerUp={onUp}
         onPointerCancel={onUp}
         className="relative bg-bg-card"
-        style={{ transform: `translateX(${offset}px)`, transition: dragging.current ? 'none' : 'transform 0.2s' }}
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: dragging.current ? 'none' : 'transform 0.2s',
+          touchAction: 'pan-y',
+          userSelect: 'none',
+        }}
       >
         {children}
       </div>

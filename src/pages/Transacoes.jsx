@@ -13,6 +13,15 @@ export default function Transacoes() {
   const { tipo: filtroTipo, contaId: filtroContaId, categoriaId: filtroCategoriaId, mesRef, ordenacao } = filtrosTransacoes
   const [excluindo, setExcluindo] = useState(null)
   const [modalFiltros, setModalFiltros] = useState(false)
+  const [sortState, setSortState] = useState({ col: null, dir: 1 })
+
+  function handleSort(col) {
+    setSortState((prev) => {
+      if (prev.col !== col) return { col, dir: 1 }
+      if (prev.dir === 1) return { col, dir: -1 }
+      return { col: null, dir: 1 }
+    })
+  }
 
   function setFiltroTipo(tipo) {
     setFiltrosTransacoes((f) => ({ ...f, tipo }))
@@ -101,6 +110,24 @@ export default function Transacoes() {
         : { bg: '#232323', text: '#8a8a87' }
     return { t, cat, conta, vencido, statusLabel, statusColor }
   })
+
+  // Ordenação da tabela desktop -- independente do "ordenar por" da barra lateral,
+  // ativada clicando nos cabeçalhos de coluna (categoria/data/status/valor).
+  // pago/recebido < vencido < pendente, pra "pagos, depois vencidos, depois pendentes".
+  const statusRank = (label) => (label === 'pago' || label === 'recebido' ? 0 : label === 'vencido' ? 1 : 2)
+  const linhasOrdenadas = useMemo(() => {
+    if (!sortState.col) return linhas
+    const arr = [...linhas]
+    arr.sort((a, b) => {
+      let res = 0
+      if (sortState.col === 'categoria') res = (a.cat?.nome || '').localeCompare(b.cat?.nome || '')
+      else if (sortState.col === 'data') res = a.t.data.localeCompare(b.t.data)
+      else if (sortState.col === 'status') res = statusRank(a.statusLabel) - statusRank(b.statusLabel)
+      else if (sortState.col === 'valor') res = a.t.valor - b.t.valor
+      return res * sortState.dir
+    })
+    return arr
+  }, [linhas, sortState])
 
   return (
     <div className="max-w-md lg:max-w-none mx-auto px-4 pt-4 pb-56 lg:px-9 lg:pt-7 lg:pb-10">
@@ -327,16 +354,16 @@ export default function Transacoes() {
             <div className="grid grid-cols-[20px_1.6fr_1fr_1fr_84px_88px_100px] gap-2.5 px-4 py-3 text-[10px] uppercase tracking-wide text-text-muted border-b border-bg-raised">
               <span />
               <span>Descrição</span>
-              <span>Categoria</span>
+              <SortHeader label="Categoria" col="categoria" sortState={sortState} onSort={handleSort} />
               <span>Conta</span>
-              <span>Data</span>
-              <span>Status</span>
-              <span className="text-right">Valor</span>
+              <SortHeader label="Data" col="data" sortState={sortState} onSort={handleSort} />
+              <SortHeader label="Status" col="status" sortState={sortState} onSort={handleSort} />
+              <SortHeader label="Valor" col="valor" sortState={sortState} onSort={handleSort} align="right" />
             </div>
             {linhas.length === 0 && (
               <p className="text-xs text-text-muted text-center py-8">Nenhuma transação nesse mês.</p>
             )}
-            {linhas.map(({ t, cat, conta, statusLabel, statusColor }) => (
+            {linhasOrdenadas.map(({ t, cat, conta, statusLabel, statusColor }) => (
               <div
                 key={t.id}
                 className="group relative grid grid-cols-[20px_1.6fr_1fr_1fr_84px_88px_100px] gap-2.5 items-center px-4 py-3 border-b border-bg-raised last:border-b-0 hover:bg-bg-raised"
@@ -474,6 +501,21 @@ export default function Transacoes() {
         </Overlay>
       )}
     </div>
+  )
+}
+
+function SortHeader({ label, col, sortState, onSort, align }) {
+  const active = sortState.col === col
+  return (
+    <button
+      onClick={() => onSort(col)}
+      className={`flex items-center gap-0.5 text-[10px] uppercase tracking-wide hover:text-text-secondary transition-colors ${
+        active ? 'text-text-primary' : 'text-text-muted'
+      } ${align === 'right' ? 'justify-end w-full' : ''}`}
+    >
+      {label}
+      {active && (sortState.dir === 1 ? <IconArrowUp size={11} /> : <IconArrowDown size={11} />)}
+    </button>
   )
 }
 
