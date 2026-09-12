@@ -83,11 +83,15 @@ export default function Transacoes() {
     }
     lista = [...lista].sort((a, b) => {
       if (ordenacao === 'valor') return b.valor - a.valor
-      if (ordenacao === 'categoria') return (a.categoria_id || '').localeCompare(b.categoria_id || '')
+      if (ordenacao === 'categoria') {
+        const nomeA = categorias.find((c) => c.id === a.categoria_id)?.nome || ''
+        const nomeB = categorias.find((c) => c.id === b.categoria_id)?.nome || ''
+        return nomeA.localeCompare(nomeB)
+      }
       return a.data.localeCompare(b.data)
     })
     return lista
-  }, [transacoes, filtroTipo, filtroContaId, filtroCategoriaId, statusFiltro, mesRef, ordenacao])
+  }, [transacoes, filtroTipo, filtroContaId, filtroCategoriaId, statusFiltro, mesRef, ordenacao, categorias])
 
   // Resumo com base na mesma lista que aparece na tela -- então reflete
   // automaticamente o mês, o tipo (despesa ou receita) e os demais filtros
@@ -439,7 +443,13 @@ export default function Transacoes() {
                   {t.anotacao || cat?.nome || 'Sem categoria'}
                   {t.parcela_atual ? ` · parcela ${t.parcela_atual}` : ''}
                 </span>
-                <span className="text-xs text-text-secondary truncate">{cat?.nome || '—'}</span>
+                <span className="text-xs text-text-secondary truncate flex items-center gap-1.5">
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ background: cat?.cor || '#5c5c59' }}
+                  />
+                  <span className="truncate">{cat?.nome || '—'}</span>
+                </span>
                 <span className="text-xs text-text-secondary truncate">{conta?.nome}</span>
                 <span className="text-xs text-text-secondary">{t.data.slice(8, 10)}/{t.data.slice(5, 7)}</span>
                 <span>

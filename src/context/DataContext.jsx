@@ -140,7 +140,7 @@ export function DataProvider({ children }) {
     categoriaId: '',
     statusFiltro: '',
     mesRef: new Date().toISOString().slice(0, 7),
-    ordenacao: 'data',
+    ordenacao: 'categoria',
   })
 
   // Carrega os dados: mock em memória no modo demo, ou do Supabase quando logado de verdade.
