@@ -32,15 +32,19 @@ function dataOcorrenciaMensal(dataInicio, k) {
   return d.toISOString().slice(0, 10)
 }
 
-// Garante que toda recorrência "fixa" ativa tenha ocorrências geradas até
-// MESES_BUFFER_FIXA meses à frente de hoje. Retorna as transações novas
-// (já com id definitivo quando salvas no Supabase).
-async function estenderRecorrenciasFixas(recorrenciasAtuais, transacoesAtuais, { isDemo }) {
+function cutoffPadrao() {
   const hoje = new Date()
-  const cutoff = new Date(hoje.getFullYear(), hoje.getMonth() + MESES_BUFFER_FIXA, hoje.getDate())
+  return new Date(hoje.getFullYear(), hoje.getMonth() + MESES_BUFFER_FIXA, hoje.getDate())
     .toISOString()
     .slice(0, 10)
+}
 
+// Garante que toda recorrência "fixa" ativa tenha ocorrências geradas até
+// "cutoff" (padrão: MESES_BUFFER_FIXA meses à frente de hoje). Passar um
+// cutoff mais distante (ex: o usuário navegou pra um mês daqui a 10 anos)
+// estende na hora, sem esperar o buffer normal alcançar aquela data.
+// Retorna as transações novas (já com id definitivo quando salvas no Supabase).
+async function estenderRecorrenciasFixas(recorrenciasAtuais, transacoesAtuais, { isDemo, cutoff = cutoffPadrao() }) {
   const novasPorRecorrencia = []
 
   for (const rec of recorrenciasAtuais) {
@@ -565,6 +569,19 @@ export function DataProvider({ children }) {
     [isDemo, transacoes]
   )
 
+  // Chamada quando o usuário navega pra um mês fora do buffer padrão (ex:
+  // avançando o filtro de transações várias vezes) -- garante que despesas
+  // fixas apareçam mesmo daqui a 10 anos, sem esperar o próximo carregamento.
+  const garantirRecorrenciasFixasAte = useCallback(
+    async (dataAlvo) => {
+      const cutoffAlvo = dataAlvo.length === 7 ? dataAlvo + '-28' : dataAlvo
+      const cutoff = cutoffAlvo > cutoffPadrao() ? cutoffAlvo : cutoffPadrao()
+      const novas = await estenderRecorrenciasFixas(recorrencias, transacoes, { isDemo, cutoff })
+      if (novas.length > 0) setTransacoes((prev) => [...prev, ...novas])
+    },
+    [isDemo, transacoes, recorrencias]
+  )
+
   const updateTransacao = useCallback(
     async (id, patch, modo = 'este') => {
       const anterior = transacoes.find((x) => x.id === id)
@@ -891,6 +908,7 @@ export function DataProvider({ children }) {
     updateTransacao,
     consolidarTransacao,
     desfazerConsolidacao,
+    garantirRecorrenciasFixasAte,
     excluirTransacao,
     notas,
     addNota,

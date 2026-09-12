@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { IconMenu2, IconEye, IconEyeOff, IconPhoto, IconChevronRight, IconChevronLeft } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
@@ -23,11 +23,19 @@ export default function Dashboard() {
     objetivos,
     valuesHidden,
     setValuesHidden,
+    garantirRecorrenciasFixasAte,
   } = useData()
 
   const mask = (value) => (valuesHidden ? '••••' : value)
   const [menuAberto, setMenuAberto] = useState(false)
   const [mesRef, setMesRef] = useState(new Date().toISOString().slice(0, 7))
+
+  // Ver um mês distante (ex: vários anos à frente) pode passar do buffer
+  // de ocorrências pré-geradas das despesas/receitas fixas -- garante que
+  // elas apareçam mesmo assim.
+  useEffect(() => {
+    garantirRecorrenciasFixasAte(mesRef)
+  }, [mesRef])
 
   function mudarMes(delta) {
     const [ano, mes] = mesRef.split('-').map(Number)

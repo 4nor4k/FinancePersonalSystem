@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconChevronLeft, IconChevronRight, IconAdjustments, IconArrowDown, IconArrowUp, IconCheck, IconArrowBackUp, IconEdit, IconTrash, IconRepeat, IconPlus } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
@@ -9,11 +9,28 @@ import PickerField from '../components/PickerField'
 
 export default function Transacoes() {
   const navigate = useNavigate()
-  const { transacoes, categorias, contas, consolidarTransacao, desfazerConsolidacao, excluirTransacao, filtrosTransacoes, setFiltrosTransacoes } = useData()
+  const {
+    transacoes,
+    categorias,
+    contas,
+    consolidarTransacao,
+    desfazerConsolidacao,
+    garantirRecorrenciasFixasAte,
+    excluirTransacao,
+    filtrosTransacoes,
+    setFiltrosTransacoes,
+  } = useData()
   const { tipo: filtroTipo, contaId: filtroContaId, categoriaId: filtroCategoriaId, statusFiltro, mesRef, ordenacao } = filtrosTransacoes
   const [excluindo, setExcluindo] = useState(null)
   const [modalFiltros, setModalFiltros] = useState(false)
   const [sortState, setSortState] = useState({ col: null, dir: 1 })
+
+  // Navegar pra um mês distante (ex: vários anos à frente) pode passar do
+  // buffer de ocorrências pré-geradas das despesas/receitas fixas -- isso
+  // garante que elas sejam estendidas na hora até cobrir o mês visualizado.
+  useEffect(() => {
+    garantirRecorrenciasFixasAte(mesRef)
+  }, [mesRef])
 
   function handleSort(col) {
     setSortState((prev) => {
