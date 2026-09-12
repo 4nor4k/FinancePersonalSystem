@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChevronLeft, IconChevronRight, IconAdjustments, IconArrowDown, IconArrowUp, IconCheck, IconEdit, IconTrash, IconRepeat, IconPlus } from '@tabler/icons-react'
+import { IconChevronLeft, IconChevronRight, IconAdjustments, IconArrowDown, IconArrowUp, IconCheck, IconArrowBackUp, IconEdit, IconTrash, IconRepeat, IconPlus } from '@tabler/icons-react'
 import { useData } from '../context/DataContext'
 import { formatBRL } from '../lib/format'
 import SwipeableRow from '../components/SwipeableRow'
@@ -9,7 +9,7 @@ import PickerField from '../components/PickerField'
 
 export default function Transacoes() {
   const navigate = useNavigate()
-  const { transacoes, categorias, contas, consolidarTransacao, excluirTransacao, filtrosTransacoes, setFiltrosTransacoes } = useData()
+  const { transacoes, categorias, contas, consolidarTransacao, desfazerConsolidacao, excluirTransacao, filtrosTransacoes, setFiltrosTransacoes } = useData()
   const { tipo: filtroTipo, contaId: filtroContaId, categoriaId: filtroCategoriaId, statusFiltro, mesRef, ordenacao } = filtrosTransacoes
   const [excluindo, setExcluindo] = useState(null)
   const [modalFiltros, setModalFiltros] = useState(false)
@@ -351,6 +351,8 @@ export default function Transacoes() {
               ]
               if (t.status === 'pendente') {
                 acoes.unshift({ icon: IconCheck, bg: '#1e2e24', color: '#7fd88f', onClick: () => consolidarTransacao(t.id) })
+              } else if (t.status === 'pago' || t.status === 'recebido') {
+                acoes.unshift({ icon: IconArrowBackUp, bg: '#2e2a1e', color: '#d8c37f', onClick: () => desfazerConsolidacao(t.id) })
               }
 
               return (
@@ -443,6 +445,16 @@ export default function Transacoes() {
                       aria-label="Marcar como pago"
                     >
                       <IconCheck size={13} />
+                    </button>
+                  )}
+                  {(t.status === 'pago' || t.status === 'recebido') && (
+                    <button
+                      onClick={() => desfazerConsolidacao(t.id)}
+                      className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+                      style={{ background: '#2e2a1e', color: '#d8c37f' }}
+                      aria-label="Desfazer confirmação"
+                    >
+                      <IconArrowBackUp size={13} />
                     </button>
                   )}
                   <button

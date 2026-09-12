@@ -16,6 +16,80 @@ import { fetchStockQuotes, fetchCambioOuro } from '../lib/quotes'
 
 const DataContext = createContext(null)
 
+// Quantos meses de ocorrências futuras mantemos sempre pré-geradas pra
+// uma despesa/receita fixa. É um buffer, não um limite: toda vez que os
+// dados carregam a gente completa de novo até esse horizonte, então uma
+// recorrência fixa nunca "acaba" sozinha -- só some se o usuário excluir.
+const MESES_BUFFER_FIXA = 12
+
+// Calcula a data da k-ésima ocorrência mensal a partir de data_inicio,
+// travando no último dia válido do mês de destino (evita estourar pro mês
+// seguinte quando o dia de início não existe nele, ex: dia 31 num mês de 30).
+function dataOcorrenciaMensal(dataInicio, k) {
+  const [ano, mes, dia] = dataInicio.split('-').map(Number)
+  const ultimoDiaDoMesAlvo = new Date(ano, mes + k, 0).getDate()
+  const d = new Date(ano, mes - 1 + k, Math.min(dia, ultimoDiaDoMesAlvo))
+  return d.toISOString().slice(0, 10)
+}
+
+// Garante que toda recorrência "fixa" ativa tenha ocorrências geradas até
+// MESES_BUFFER_FIXA meses à frente de hoje. Retorna as transações novas
+// (já com id definitivo quando salvas no Supabase).
+async function estenderRecorrenciasFixas(recorrenciasAtuais, transacoesAtuais, { isDemo }) {
+  const hoje = new Date()
+  const cutoff = new Date(hoje.getFullYear(), hoje.getMonth() + MESES_BUFFER_FIXA, hoje.getDate())
+    .toISOString()
+    .slice(0, 10)
+
+  const novasPorRecorrencia = []
+
+  for (const rec of recorrenciasAtuais) {
+    if (rec.tipo !== 'fixa' || rec.ativa === false) continue
+
+    const ocorrencias = transacoesAtuais
+      .filter((t) => t.recorrencia_id === rec.id)
+      .sort((a, b) => (a.data < b.data ? -1 : 1))
+    if (ocorrencias.length === 0) continue
+
+    const ultima = ocorrencias[ocorrencias.length - 1]
+    if (ultima.data >= cutoff) continue
+
+    const template = ultima
+    let k = ocorrencias.length
+    const novas = []
+    let data = dataOcorrenciaMensal(rec.data_inicio, k)
+    while (data < cutoff) {
+      novas.push({
+        id: 't-' + Date.now() + '-' + rec.id + '-' + k,
+        perfil_id: template.perfil_id,
+        conta_id: template.conta_id,
+        categoria_id: template.categoria_id,
+        recorrencia_id: rec.id,
+        tipo: template.tipo,
+        valor: rec.valor_original,
+        data,
+        anotacao: template.anotacao || '',
+        status: 'pendente',
+        parcela_atual: null,
+      })
+      k += 1
+      data = dataOcorrenciaMensal(rec.data_inicio, k)
+    }
+    if (novas.length > 0) novasPorRecorrencia.push(novas)
+  }
+
+  const todasNovas = novasPorRecorrencia.flat()
+  if (todasNovas.length === 0) return []
+
+  if (!isDemo) {
+    const paraInserir = todasNovas.map(({ id, ...rest }) => rest)
+    const { data, error } = await supabase.from('transacoes').insert(paraInserir).select()
+    if (reportError(error, 'estender despesas/receitas fixas')) return []
+    return data || []
+  }
+  return todasNovas
+}
+
 // Antes, erros do Supabase eram ignorados silenciosamente (só pegávamos
 // "data" e nunca checávamos "error"), o que causava bugs tipo "criei mas
 // não aparece". Esse helper garante que todo erro apareça no console e
@@ -82,6 +156,12 @@ export function DataProvider({ children }) {
         setObjetivos(mockObjetivos)
         setWatchlistAtivos(mockWatchlist)
         setActiveProfileId(mockPerfis[0].id)
+
+        const novasFixas = await estenderRecorrenciasFixas(mockRecorrencias, mockTransacoes, { isDemo: true })
+        if (!cancelled && novasFixas.length > 0) {
+          setTransacoes((prev) => [...prev, ...novasFixas])
+        }
+
         setLoading(false)
         return
       }
@@ -129,6 +209,12 @@ export function DataProvider({ children }) {
       setObjetivos(o.data || [])
       setWatchlistAtivos(wl.data || [])
       setActiveProfileId(perfisData[0]?.id ?? null)
+
+      const novasFixas = await estenderRecorrenciasFixas(rec.data || [], t.data || [], { isDemo: false })
+      if (!cancelled && novasFixas.length > 0) {
+        setTransacoes((prev) => [...prev, ...novasFixas])
+      }
+
       setLoading(false)
     }
 
@@ -464,6 +550,21 @@ export function DataProvider({ children }) {
     [isDemo, transacoes]
   )
 
+  const desfazerConsolidacao = useCallback(
+    async (id) => {
+      const t = transacoes.find((x) => x.id === id)
+      if (!t) return
+      setTransacoes((prev) => prev.map((x) => (x.id === id ? { ...x, status: 'pendente' } : x)))
+      if (!isDemo) {
+        const { error } = await supabase.from('transacoes').update({ status: 'pendente' }).eq('id', id)
+        if (reportError(error, 'desfazer confirmação de pagamento')) {
+          setTransacoes((prev) => prev.map((x) => (x.id === id ? t : x)))
+        }
+      }
+    },
+    [isDemo, transacoes]
+  )
+
   const updateTransacao = useCallback(
     async (id, patch, modo = 'este') => {
       const anterior = transacoes.find((x) => x.id === id)
@@ -513,10 +614,24 @@ export function DataProvider({ children }) {
         )
         const idsRemover = removidas.map((x) => x.id)
         setTransacoes((prev) => prev.filter((x) => !idsRemover.includes(x.id)))
+
+        // Desativa a recorrência -- senão o buffer de ocorrências futuras da
+        // fixa (ver estenderRecorrenciasFixas) recria o que acabou de ser
+        // excluído na próxima vez que os dados carregarem.
+        const recorrenciaAnterior = recorrencias.find((r) => r.id === alvo.recorrencia_id)
+        setRecorrencias((prev) => prev.map((r) => (r.id === alvo.recorrencia_id ? { ...r, ativa: false } : r)))
+
         if (!isDemo) {
           const { error } = await supabase.from('transacoes').delete().in('id', idsRemover)
           if (reportError(error, 'excluir transações')) {
             setTransacoes((prev) => [...prev, ...removidas])
+          }
+          const { error: errorRec } = await supabase
+            .from('recorrencias')
+            .update({ ativa: false })
+            .eq('id', alvo.recorrencia_id)
+          if (reportError(errorRec, 'desativar recorrência') && recorrenciaAnterior) {
+            setRecorrencias((prev) => prev.map((r) => (r.id === alvo.recorrencia_id ? recorrenciaAnterior : r)))
           }
         }
         return
@@ -530,7 +645,7 @@ export function DataProvider({ children }) {
         }
       }
     },
-    [isDemo, transacoes]
+    [isDemo, transacoes, recorrencias]
   )
 
   // ---------- Notas ----------
@@ -775,6 +890,7 @@ export function DataProvider({ children }) {
     addTransacao,
     updateTransacao,
     consolidarTransacao,
+    desfazerConsolidacao,
     excluirTransacao,
     notas,
     addNota,
